@@ -1,0 +1,34 @@
+---
+# Application configuration
+
+# Environment settings
+node_env: development
+port: 4000
+
+# Database configuration
+database:
+  url: ${DATABASE_URL}
+
+# OCPI Configuration
+ocpi:
+  url: ${OCPI_URL}
+  auth_key: ${OCPI_AUTH_KEY}
+
+# Beckn Protocol Configuration
+beckn:
+  bpp_id: ${BPP_ID}
+  bpp_uri: ${BPP_URI}
+  protocol_server_url: ${PROTOCOL_SERVER_URL}
+
+# Application specific configuration
+app:
+  discovery:
+    default_radius_meters: 5000  # 5km default radius
+    standard_session_kwh: 1      # Assumed standard session of 1 kWh
+    share_location_details: false  # Whether to share location details on discovery
+  defaults:
+    item_name: 'EV Charger'
+  cancellation_terms:
+    - fulfillment_state: confirmed
+      cancellation_fee:
+        percentage: 30

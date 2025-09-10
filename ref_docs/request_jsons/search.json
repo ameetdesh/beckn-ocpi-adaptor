@@ -1,0 +1,39 @@
+{
+    "context": {
+        "domain": "ev-charging:uei",
+        "action": "search",
+        "version": "1.1.0",
+        "bap_id": "connector-bap",
+        "location": {},
+        "bap_uri": "https://connector-bap-network.pulseenergy.io/",
+        "transaction_id": "{{$guid}}",
+        "message_id": "{{$guid}}",
+        "timestamp": "{{$isoTimestamp}}"
+    },
+    "message": {
+        "intent": {
+            "item": {
+                "descriptor": {
+                    "code": "load",
+                    "name": "EV Charger"
+                }
+            },
+            "fulfillment": {
+                "type": "CHARGING",
+                "stops": [
+                    {
+                        "location": {
+                            "gps": "28.6304,77.2177",
+                            "circle": {
+                                "radius": {
+                                    "value": "6",
+                                    "unit": "km"
+                                }
+                            }
+                        }
+                    }
+                ]
+            }
+        }
+    }
+}

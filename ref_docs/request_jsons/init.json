@@ -1,0 +1,91 @@
+{
+    "context": {
+        "domain": "ev-charging:uei",
+        "action": "init",
+        "version": "1.1.0",
+        "bap_id": "connector-bap",
+        "location": {},
+        "bap_uri": "https://connector-bap-network.pulseenergy.io/",
+        "transaction_id": "{{$guid}}",
+        "message_id": "{{$guid}}",
+        "timestamp": "{{$isoTimestamp}}"
+    },
+    "message": {
+        "order": {
+            "provider": {
+                "id": "THP-00DsPxWpQvA179xNl4o"
+            },
+            "items": [
+                {
+                    "id": "1",
+                    "tags": [
+                        {
+                            "descriptor": {
+                                "code": "charging-options",
+                                "name": "Charging Options"
+                            },
+                            "list": [
+                                {
+                                    "descriptor": {
+                                        "name": "Charging By",
+                                        "code": "charging-by"
+                                    },
+                                    "value": "AMOUNT"
+                                },
+                                {
+                                    "descriptor": {
+                                        "name": "Charging Limit",
+                                        "code": "charging-limit"
+                                    },
+                                    "value": "100"
+                                }
+                            ]
+                        }
+                    ]
+                }
+            ],
+            "billing": {
+                "name": "Ravi Kumar",
+                "organization": {
+                    "descriptor": {
+                        "name": "GreenCharge Pvt Ltd"
+                    }
+                },
+                "address": "Apartment 123, MG Road, Bengaluru, Karnataka, 560001, India",
+                "state": {
+                    "name": "Karnataka"
+                },
+                "city": {
+                    "name": "Bengaluru"
+                },
+                "email": "ravi.kumar@greencharge.com",
+                "phone": "+918765432100",
+                "time": {
+                    "timestamp": "2025-07-30T12:02:00Z"
+                },
+                "tax_id": "GSTIN29ABCDE1234F1Z5"
+            },
+            "fulfillments": [
+                {
+                    "id": "1",
+                    "stops": [
+                        {
+                            "type": "START",
+                            "time": {
+                                "timestamp": "2023-07-16T10:00:00+05:30"
+                            }
+                        }
+                    ],
+                    "customer": {
+                        "person": {
+                            "name": "Ravi Kumar"
+                        },
+                        "contact": {
+                            "phone": "+91-9887766554"
+                        }
+                    }
+                }
+            ]
+        }
+    }
+}

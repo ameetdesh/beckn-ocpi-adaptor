@@ -1,0 +1,41 @@
+{
+  "name": "beckn-ocpi-adaptor",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "dev": "nodemon -r dotenv/config src/index.ts --",
+    "start": "node -r dotenv/config build/index.js",
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "build": "tsc && chmod 755 build/index.js",
+    "discovery": "node -r dotenv/config build/services/discovery.js"
+  },
+  "author": "Nirmal",
+  "license": "MIT",
+  "dependencies": {
+    "axios": "^1.11.0",
+    "cors": "^2.8.5",
+    "express": "^5.1.0",
+    "js-yaml": "^4.1.0",
+    "jsonata": "^2.1.0",
+    "pg": "^8.16.3",
+    "pg-format": "^1.0.4",
+    "uuid": "^11.1.0",
+    "zod": "^3.25.76"
+  },
+  "devDependencies": {
+    "@types/cors": "^2.8.19",
+    "@types/dotenv": "^6.1.1",
+    "@types/express": "^5.0.3",
+    "@types/js-yaml": "^4.0.9",
+    "@types/node": "^24.3.0",
+    "@types/pg": "^8.15.5",
+    "@types/pg-format": "^1.0.5",
+    "@types/uuid": "^10.0.0",
+    "dotenv": "^17.2.1",
+    "nodemon": "^3.1.10",
+    "ocpi-types-typescript": "^0.1.0",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.9.2"
+  }
+}

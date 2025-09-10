@@ -1,0 +1,52 @@
+{
+    "context": {
+        "domain": "ev-charging:uei",
+        "action": "select",
+        "version": "1.1.0",
+        "bap_id": "connector-bap",
+        "location": {},
+        "bap_uri": "https://connector-bap-network.pulseenergy.io/",
+        "transaction_id": "{{$guid}}",
+        "message_id": "{{$guid}}",
+        "timestamp": "{{$isoTimestamp}}"
+    },
+    "message": {
+        "order": {
+            "provider": {
+                "id": "THP-00DsPxWpQvA179xNl4o"
+            },
+            "items": [
+                {
+                    "id": "1",
+                    "quantity": {
+                        "selected": {
+                            "measure": {
+                                "value": "4",
+                                "unit": "kWh"
+                            }
+                        }
+                    }
+                }
+            ],
+            "fulfillments": [
+                {
+                    "id": "1",
+                    "stops": [
+                        {
+                            "type": "start",
+                            "time": {
+                                "timestamp": "2023-07-16T10:00:00+05:30"
+                            }
+                        },
+                        {
+                            "type": "finish",
+                            "time": {
+                                "timestamp": "2023-07-16T10:30:00+05:30"
+                            }
+                        }
+                    ]
+                }
+            ]
+        }
+    }
+}
