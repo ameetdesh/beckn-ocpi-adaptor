@@ -167,20 +167,20 @@ const createBecknItem = async (item: any, tariff: Tariff) => {
     return current_item_beckn;
 }
 
-const addQuotes = (quotes: Quote[]) => {
-    var quote_breakups = [];
+const addQuotes = (quotes: Quote[]): Quote => {
+    const quote_breakups: NonNullable<Quote['breakup']> = [];
     let total = 0;
-    for(const quote of quotes) {
-        total += Number(quote.price.value);
-        quote_breakups.push(...quote.breakup);
+    for (const quote of quotes) {
+        total += Number(quote.price?.value ?? 0);
+        quote_breakups.push(...(quote.breakup ?? []));
     }
     return {
         price: {
             currency: 'INR/kWh',
-            value: String(total.toFixed(2))
+            value: total.toFixed(2)
         },
         breakup: quote_breakups
-    };
+    } as Quote;
 }
 
 const getStartAndEndTimeStamp = (fulfillment: Fulfillment) => {
@@ -188,9 +188,10 @@ const getStartAndEndTimeStamp = (fulfillment: Fulfillment) => {
     let endTimestamp: string = "";
     if (!fulfillment.stops) return { startTimestamp, endTimestamp };
     for (const stop of fulfillment.stops) {
-        if (stop.type === 'start' && stop.time && stop.time.timestamp) {
+        const stopType = stop.type?.toLowerCase();
+        if (stopType === 'start' && stop.time?.timestamp) {
             startTimestamp = stop.time.timestamp;
-        } else if (stop.type === 'finish' && stop.time && stop.time.timestamp) {
+        } else if (stopType === 'finish' && stop.time?.timestamp) {
             endTimestamp = stop.time.timestamp;
         }
     } 
@@ -300,6 +301,7 @@ export const createOnInitResponse = async (initRequest: InitReqBody) => {
         },
         message: {
             order: {
+                type: 'DEFAULT',
                 provider: response_provider,
                 quote: response_quote,
                 items: [response_item],
@@ -313,18 +315,25 @@ export const createOnInitResponse = async (initRequest: InitReqBody) => {
 
 export const createOnSelectResponse = async (selectRequest: SelectRequest) => {
 
-    const provider_id = selectRequest.message.order.provider.id;
-    
-    const fulfillment = selectRequest.message.order.fulfillments[0];
+    const order = selectRequest.message?.order;
+    if (!order || !order.provider?.id || !order.fulfillments?.length || !order.items?.length) {
+        return createErrorResponse(selectRequest.context, '30004');
+    }
+
+    const provider_id = order.provider.id;
+
+    const fulfillment = order.fulfillments[0];
 
 
     const all_quotes: Quote[] = [];
     const all_items: Item[] = [];
     var location_beckn;
 
-    for (const current_item of selectRequest.message.order.items) {
+    for (const current_item of order.items) {
         const item_id = current_item.id;
-        const units_selected = Number(current_item.quantity.selected.measure.value) || appConfig.app.discovery.standard_session_kwh;
+        const units_selected =
+            Number(current_item.quantity?.selected?.measure?.value ?? 0) ||
+            appConfig.app.discovery.standard_session_kwh;
         if (!item_id) {
             return createErrorResponse(selectRequest.context, '30004');
         }
@@ -361,7 +370,7 @@ export const createOnSelectResponse = async (selectRequest: SelectRequest) => {
         location_gps: appConfig.app.discovery.share_location_details ? `${location_beckn?.gps_latitude},${location_beckn?.gps_longitude}`: undefined,
         location_name: location_beckn?.name,
         location_address: appConfig.app.discovery.share_location_details ? location_beckn?.address_full : undefined
-    });
+    }) as Fulfillment;
 
     const provider_beckn = await provider_mapping.evaluate({
         provider_id,
@@ -382,6 +391,7 @@ export const createOnSelectResponse = async (selectRequest: SelectRequest) => {
         },
         message: {
             order: {
+                type: 'DEFAULT',
                 provider: provider_beckn,
                 items: all_items,
                 fulfillments: [fulfillment_beckn],
