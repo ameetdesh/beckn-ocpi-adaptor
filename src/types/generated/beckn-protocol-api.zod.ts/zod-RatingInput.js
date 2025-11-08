@@ -1,0 +1,3 @@
+import { z } from "zod";
+
+export default z.object({ "id": z.string().describe("Target entity ID being rated (order/item/fulfillment/provider/agent)."), "value": z.number().gte(0).describe("Numeric rating value (legacy usually 1–5)."), "best": z.number().describe("Maximum of the rating scale (default 5 if omitted).").optional(), "worst": z.number().describe("Minimum of the rating scale (default 1 or 0 if omitted).").optional(), "category": z.enum(["order","item","fulfillment","provider","agent","other"]).describe("What is being rated.").optional(), "feedback": z.object({ "comments": z.string().optional(), "tags": z.array(z.string()).optional() }).strict().optional() }).strict();

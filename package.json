@@ -8,7 +8,16 @@
     "start": "node -r dotenv/config build/index.js",
     "test": "echo \"Error: no test specified\" && exit 1",
     "build": "tsc && chmod 755 build/index.js",
-    "discovery": "node -r dotenv/config build/services/discovery.js"
+    "discovery": "node -r dotenv/config build/services/discovery.js",
+    "generate:zod:v1": "node -e \"require('fs').mkdirSync('src/types/generated/beckn-v1', { recursive: true });\" && openapi-to-zod -i ref_docs/specs_yaml/simple-energy_EV_1.1.0_openapi_3.1.yaml -o src/types/generated/beckn-v1 --fileExt ts",
+    "generate:zod:v2": "node -e \"require('fs').mkdirSync('src/types/generated/beckn-v2/core', { recursive: true });\" && openapi-to-zod -i specs/beckn-protocol-specifications/api-specs/beckn-protocol-api.yaml -o src/types/generated/beckn-v2/core --fileExt ts",
+    "generate:zod:v2:core-schemas": "node -e \"require('fs').mkdirSync('src/types/generated/beckn-v2/core-schemas', { recursive: true });\" && openapi-to-zod -i specs/beckn-protocol-specifications/schema/core/v2/core.yaml -o src/types/generated/beckn-v2/core-schemas --fileExt ts",
+    "generate:zod:attr:charging-service": "node -e \"require('fs').mkdirSync('src/types/generated/beckn-v2/charging-service', { recursive: true });\" && openapi-to-zod -i specs/beckn-protocol-specifications/schema/EvChargingService/v1/attributes.yaml -o src/types/generated/beckn-v2/charging-service --fileExt ts",
+    "generate:zod:attr:charging-session": "node -e \"require('fs').mkdirSync('src/types/generated/beckn-v2/charging-session', { recursive: true });\" && openapi-to-zod -i specs/beckn-protocol-specifications/schema/EvChargingSession/v1/attributes.yaml -o src/types/generated/beckn-v2/charging-session --fileExt ts",
+    "generate:zod:attr:charging-offer": "node -e \"require('fs').mkdirSync('src/types/generated/beckn-v2/charging-offer', { recursive: true });\" && openapi-to-zod -i specs/beckn-protocol-specifications/schema/EvChargingOffer/v1/attributes.yaml -o src/types/generated/beckn-v2/charging-offer --fileExt ts",
+    "generate:zod:attr:cpo": "node -e \"require('fs').mkdirSync('src/types/generated/beckn-v2/charging-point-operator', { recursive: true });\" && openapi-to-zod -i specs/beckn-protocol-specifications/schema/EvChargingPointOperator/v1/attributes.yaml -o src/types/generated/beckn-v2/charging-point-operator --fileExt ts",
+    "generate:zod:attributes": "npm run generate:zod:attr:charging-service && npm run generate:zod:attr:charging-session && npm run generate:zod:attr:charging-offer && npm run generate:zod:attr:cpo",
+    "generate:zod": "npm run generate:zod:v1 && npm run generate:zod:v2 && npm run generate:zod:v2:core-schemas && npm run generate:zod:attributes"
   },
   "author": "Nirmal",
   "license": "MIT",
@@ -35,6 +44,7 @@
     "dotenv": "^17.2.1",
     "nodemon": "^3.1.10",
     "ocpi-types-typescript": "^0.1.0",
+    "openapi-to-zod": "^0.0.9",
     "ts-node": "^10.9.2",
     "typescript": "^5.9.2"
   }

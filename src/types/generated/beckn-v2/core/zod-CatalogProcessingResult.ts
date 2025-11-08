@@ -1,0 +1,3 @@
+import { z } from "zod";
+
+export default z.object({ "catalog_id": z.string().describe("The \"beckn:id\" of the submitted catalog"), "status": z.enum(["ACCEPTED","REJECTED","PARTIAL"]).describe("Final processing outcome for this catalog"), "item_count": z.number().int().gte(0).describe("Number of items indexed (when accepted/partial)").optional(), "warnings": z.array(z.object({ "code": z.string(), "message": z.string(), "details": z.record(z.any()).optional() })).describe("Non-fatal issues encountered").optional(), "error": z.object({ "code": z.string().describe("Error code"), "message": z.string().describe("Human-readable error message"), "details": z.record(z.any()).describe("Additional error details").optional() }).optional() });

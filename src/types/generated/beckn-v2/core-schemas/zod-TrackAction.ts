@@ -1,0 +1,3 @@
+import { z } from "zod";
+
+export default z.object({ "target": z.object({ "url": z.string().url().describe("Tracking page URL").optional() }).catchall(z.any()).describe("schema.org EntryPoint").optional(), "deliveryMethod": z.enum(["DELIVERY","PICKUP","RESERVATION","DIGITAL"]).describe("DELIVERY    → last-mile / parcel logistics\nPICKUP      → customer collects from a place\nRESERVATION → entitlement/booking is fulfilled (tickets, seats, appointments)\nDIGITAL     → digital good / license access\n").optional(), "reservationId": z.string().describe("Unique identifier for the reservation (schema.org Reservation.reservationId).").optional() }).catchall(z.any()).describe("Minimal schema.org TrackAction for clickable tracking.");
