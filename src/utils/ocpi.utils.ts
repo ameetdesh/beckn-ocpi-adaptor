@@ -94,13 +94,13 @@ export async function fetchAndStoreLocations(context?: Context) {
                 name: location.name ?? undefined,
                 provider_id: location.party_id,
                 city: location.city,
-                state: location.state,
+                state: location.state ?? undefined,
                 gps_latitude: location.coordinates?.latitude ? Number(location.coordinates.latitude) : undefined,
                 gps_longitude: location.coordinates?.longitude ? Number(location.coordinates.longitude) : undefined,
                 country_code: location.country_code,
                 address_full: location.address,
-                provider_name: location.operator?.name,
-                twentyfourseven: location.opening_times ? Boolean(location.opening_times.twentyfourseven) : undefined
+                provider_name: location.operator?.name ?? undefined,
+                twentyfourseven: location.opening_times ? location.opening_times.twentyfourseven : undefined
             }));
 
         // Insert locations
@@ -113,6 +113,8 @@ export async function fetchAndStoreLocations(context?: Context) {
                 if (!evse.uid || !evse.status) return [];     
                 return evse.connectors?.flatMap(connector => {
                     if (!connector.id) return [];
+
+                    const tariffIds = (connector.tariff_ids ?? []).filter((tariff_id): tariff_id is string => Boolean(tariff_id));
         
                     const baseItem = {
                         location_id: location.id!,
@@ -125,22 +127,22 @@ export async function fetchAndStoreLocations(context?: Context) {
                         format: connector.format,
                         max_voltage: connector.max_voltage,
                         max_amperage: connector.max_amperage,
-                        max_electric_power: connector.max_electric_power
+                        max_electric_power: connector.max_electric_power ?? undefined
                     };
         
                     // If there are tariff_ids, map each to a new object.
                     // Otherwise, return a single object with a null tariff_id.
-                    if (connector.tariff_ids?.length) {
-                        return connector.tariff_ids.map(tariff_id => ({
+                    if (tariffIds.length) {
+                        return tariffIds.map(tariff_id => ({
                             ...baseItem,
                             tariff_id
                         }));
-                    } else {
-                        return [{
-                            ...baseItem,
-                            tariff_id: ''
-                        }];
                     }
+
+                    return [{
+                        ...baseItem,
+                        tariff_id: ''
+                    }];
                 }) ?? []; // Return empty array if connectors is null/undefined
             }) ?? [] // Return empty array if evses is null/undefined
         );
@@ -204,8 +206,16 @@ export async function fetchAndStoreTariffs(context?: Context) {
         // Transform OCPI tariffs to our database format
         const tariffData = tariffs.map(tariff => ({
             id: tariff.id,
-            start_date_time: tariff.start_date_time,
-            end_date_time: tariff.end_date_time,
+            start_date_time: typeof tariff.start_date_time === 'string'
+                ? tariff.start_date_time
+                : tariff.start_date_time instanceof Date
+                    ? tariff.start_date_time.toISOString()
+                    : undefined,
+            end_date_time: typeof tariff.end_date_time === 'string'
+                ? tariff.end_date_time
+                : tariff.end_date_time instanceof Date
+                    ? tariff.end_date_time.toISOString()
+                    : undefined,
             currency: tariff.currency,
             country_code: tariff.country_code
         }));
@@ -222,7 +232,8 @@ export async function fetchAndStoreTariffs(context?: Context) {
                         tariff_id: tariff.id,
                         price: component.price,
                         type: component.type,
-                        vat: component.vat
+                        vat: component.vat ?? undefined,
+                        step_size: component.step_size
                     }))
                 );
 

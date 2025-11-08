@@ -108,6 +108,9 @@ app:
     default_radius_meters: 5000  # 5km default search radius
     standard_session_kwh: 1      # Default session size in kWh
     share_location_details: true  # Whether to share location details on discovery
+  initialization:
+    run_migrations_on_startup: true  # Run database migrations during startup
+    refresh_ocpi_cache_on_startup: true  # Refresh the OCPI cache during startup
   
   # Cancellation terms (optional)
   cancellation_terms:
@@ -145,6 +148,10 @@ app:
 - `app.discovery.standard_session_kwh`: Default session size in kWh
   - Example: `1`
 - `app.discovery.share_location_details`: Whether to share location details
+  - `true` or `false`
+- `app.initialization.run_migrations_on_startup`: Runs database migrations when the adaptor boots
+  - `true` or `false`
+- `app.initialization.refresh_ocpi_cache_on_startup`: Refreshes the OCPI cache when the adaptor boots
   - `true` or `false`
 - `app.defaults.item_name`: Default item name
   - Example: `'EV Charger'`

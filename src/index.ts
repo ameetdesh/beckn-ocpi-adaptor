@@ -37,11 +37,21 @@ app.listen(PORT, () => {
 });
 
 async function main() {
-    // // Initialize database
-    // await runMigrations();
-    // console.log(`[${new Date().toISOString()}] Database initialized and migrations applied`);
-    // await refreshOCPIcache();
-    // console.log(`[${new Date().toISOString()}] OCPI Cache refreshed`);
+    const { run_migrations_on_startup, refresh_ocpi_cache_on_startup } = appConfig.app.initialization;
+
+    if (run_migrations_on_startup) {
+        await runMigrations();
+        console.log(`[${new Date().toISOString()}] Database initialized and migrations applied`);
+    } else {
+        console.log(`[${new Date().toISOString()}] Skipping database migrations (disabled via configuration)`);
+    }
+
+    if (refresh_ocpi_cache_on_startup) {
+        await refreshOCPIcache();
+        console.log(`[${new Date().toISOString()}] OCPI Cache refreshed`);
+    } else {
+        console.log(`[${new Date().toISOString()}] Skipping OCPI cache refresh (disabled via configuration)`);
+    }
 }
     
 main();

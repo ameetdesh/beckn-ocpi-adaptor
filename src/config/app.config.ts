@@ -45,6 +45,10 @@ export interface AppConfig {
         defaults: {
             item_name: string;
         };
+        initialization: {
+            run_migrations_on_startup: boolean;
+            refresh_ocpi_cache_on_startup: boolean;
+        };
     }
 }
 
@@ -63,7 +67,9 @@ const validateConfig = (config: AppConfig) => {
         'app.discovery.default_radius_meters',
         'app.discovery.standard_session_kwh',
         'app.discovery.share_location_details',
-        'app.defaults.item_name'
+        'app.defaults.item_name',
+        'app.initialization.run_migrations_on_startup',
+        'app.initialization.refresh_ocpi_cache_on_startup'
     ];
 
     const missingFields = requiredFields.filter(field => {
@@ -112,6 +118,14 @@ const validateConfig = (config: AppConfig) => {
 
     if (typeof config.app.discovery.share_location_details !== 'boolean') {
         throw new Error('app.discovery.share_location_details must be a boolean');
+    }
+
+    if (typeof config.app.initialization.run_migrations_on_startup !== 'boolean') {
+        throw new Error('app.initialization.run_migrations_on_startup must be a boolean');
+    }
+
+    if (typeof config.app.initialization.refresh_ocpi_cache_on_startup !== 'boolean') {
+        throw new Error('app.initialization.refresh_ocpi_cache_on_startup must be a boolean');
     }
 
     if (config.app.cancellation_terms) {
@@ -232,7 +246,6 @@ const loadConfig = (): AppConfig => {
     if (config.beckn.bpp_uri) validateUrl(config.beckn.bpp_uri, 'beckn.bpp_uri');
     if (config.beckn.protocol_server_url) validateUrl(config.beckn.protocol_server_url, 'beckn.protocol_server_url');
     if (config.database.url) validateUrl(config.database.url, 'database_url');
-
 
     return config;
 };

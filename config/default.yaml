@@ -26,6 +26,9 @@ app:
     default_radius_meters: 5000  # 5km default radius
     standard_session_kwh: 1      # Assumed standard session of 1 kWh
     share_location_details: false  # Whether to share location details on discovery
+  initialization:
+    run_migrations_on_startup: false
+    refresh_ocpi_cache_on_startup: false
   defaults:
     item_name: 'EV Charger'
   cancellation_terms:
