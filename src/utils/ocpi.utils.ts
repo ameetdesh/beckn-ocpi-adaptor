@@ -70,39 +70,21 @@ export async function fetchAndStoreLocations(context?: Context) {
     try {
         const locations = await fetchFromOCPI<OCPILocation[]>('/locations');
 
-        if(context){
-            insertLog({
-                id: uuidv4(),
-                transaction_id: context.transaction_id!,
-                message_id: context.message_id!,
-                bap_id: context.bap_id || 'evcharging-bap.becknprotocol.io',
-                protocol: 'ocpi',
-                action: context.action! || 'search',
-                stage: 'discovery',
-                endpoint: '/ocpi/cpo/2.2.1/locations',
-                method: 'GET',
-                status: 'success',
-                status_code: 200,
-                request_data: {},
-                response_data: locations
-            });
-        } else {
-            insertLog({
-                id: uuidv4(),
-                transaction_id: 'caching',
-                message_id: 'caching',
-                bap_id: 'evcharging-bap.becknprotocol.io',
-                protocol: 'ocpi',
-                action: 'GET locations',
-                stage: 'discovery',
-                endpoint: '/ocpi/cpo/2.2.1/locations',
-                method: 'GET',
-                status: 'success',
-                status_code: 200,
-                request_data: {},
-                response_data: locations
-            });
-        }
+        insertLog({
+            id: uuidv4(),
+            transaction_id: context?.transaction_id || 'caching',
+            message_id: context?.message_id || 'caching',
+            bap_id: context?.bap_id || 'evcharging-bap.becknprotocol.io',
+            protocol: 'ocpi',
+            action: context?.action || 'GET locations',
+            stage: 'discovery',
+            endpoint: '/ocpi/cpo/2.2.1/locations',
+            method: 'GET',
+            status: 'success',
+            status_code: 200,
+            request_data: {},
+            response_data: locations
+        });
 
         // Transform OCPI locations to our database format
         const locationData = locations
@@ -170,9 +152,27 @@ export async function fetchAndStoreLocations(context?: Context) {
     }
 }
 
-export async function checkEVSEStatus(location_id: string, evse_uid: string) {
+export async function checkEVSEStatus(location_id: string, evse_uid: string, context?: Context) {
     try {
-        const location = await fetchFromOCPI<OCPIEVSE>(`/locations/${location_id}/${evse_uid}`);
+        const endpoint = `/locations/${location_id}/${evse_uid}`;
+        const location = await fetchFromOCPI<OCPIEVSE>(endpoint);
+
+        insertLog({
+            id: uuidv4(),
+            transaction_id: context?.transaction_id || '',
+            message_id: context?.message_id || '',
+            bap_id: context?.bap_id || 'evcharging-bap.becknprotocol.io',
+            protocol: 'ocpi',
+            action: 'GET EVSE Status',
+            stage: 'order',
+            endpoint: endpoint,
+            method: 'GET',
+            status: 'success',
+            status_code: 200,
+            request_data: {},
+            response_data: location
+        });
+
         return location.status;
     } catch (error) {
         console.error('Error fetching and storing locations:', error);
@@ -185,39 +185,21 @@ export async function fetchAndStoreTariffs(context?: Context) {
 
         const tariffs = await fetchFromOCPI<OCPITariff[]>('/tariffs');
     
-        if(context){
-            insertLog({
-                id: uuidv4(),
-                transaction_id: context.transaction_id!,
-                message_id: context.message_id!,
-                bap_id: context.bap_id || 'evcharging-bap.becknprotocol.io',
-                protocol: 'ocpi',
-                action: context.action! || 'search',
-                stage: 'discovery',
-                endpoint: '/ocpi/cpo/2.2.1/tariffs',
-                method: 'GET',
-                status: 'success',
-                status_code: 200,
-                request_data: {},
-                response_data: tariffs
-            });
-        } else {
-            insertLog({
-                id: uuidv4(),
-                transaction_id: 'caching',
-                message_id: 'caching',
-                bap_id: 'evcharging-bap.becknprotocol.io',
-                protocol: 'ocpi',
-                action: 'GET tariffs',
-                stage: 'discovery',
-                endpoint: '/ocpi/cpo/2.2.1/tariffs',
-                method: 'GET',
-                status: 'success',
-                status_code: 200,
-                request_data: {},
-                response_data: tariffs
-            });
-        }
+        insertLog({
+            id: uuidv4(),
+            transaction_id: context?.transaction_id || 'caching',
+            message_id: context?.message_id || 'caching',
+            bap_id: context?.bap_id || 'evcharging-bap.becknprotocol.io',
+            protocol: 'ocpi',
+            action: context?.action! || 'GET tariffs',
+            stage: 'discovery',
+            endpoint: '/ocpi/cpo/2.2.1/tariffs',
+            method: 'GET',
+            status: 'success',
+            status_code: 200,
+            request_data: {},
+            response_data: tariffs
+        });
 
         // Transform OCPI tariffs to our database format
         const tariffData = tariffs.map(tariff => ({

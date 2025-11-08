@@ -103,8 +103,21 @@ const query = async (text: string, params: any[] = []) => {
 export const insertLog = async (log: LogData) => {
     try {
         log = JSON.parse(JSON.stringify(log));
-        if(!log.transaction_id || !log.protocol || !log.action || !log.stage || !log.endpoint || !log.method || !log.status){
-            throw new Error('Transaction id, protocol, action, stage, endpoint, method, status and timestamp are required');
+        const requiredFields: (keyof LogData)[] = [
+            'transaction_id',
+            'message_id',
+            'protocol',
+            'action',
+            'stage',
+            'endpoint',
+            'method',
+            'status'
+        ];
+
+        for (const field of requiredFields) {
+            if (log[field] == null) { // Checks for both undefined and null
+                throw new Error(`Missing required field in log: ${field}`);
+            }
         }
         const id = uuidv4();
 

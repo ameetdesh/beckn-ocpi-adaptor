@@ -37,11 +37,11 @@ app.listen(PORT, () => {
 });
 
 async function main() {
-    // Initialize database
-    //await runMigrations();
-    console.log(`[${new Date().toISOString()}] Database initialized and migrations applied`);
-    //await refreshOCPIcache();
-    console.log(`[${new Date().toISOString()}] OCPI Cache refreshed`);
+    // // Initialize database
+    // await runMigrations();
+    // console.log(`[${new Date().toISOString()}] Database initialized and migrations applied`);
+    // await refreshOCPIcache();
+    // console.log(`[${new Date().toISOString()}] OCPI Cache refreshed`);
 }
     
 main();
