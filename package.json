@@ -19,7 +19,7 @@
     "generate:zod:attributes": "npm run generate:zod:attr:charging-service && npm run generate:zod:attr:charging-session && npm run generate:zod:attr:charging-offer && npm run generate:zod:attr:cpo",
     "generate:zod": "npm run generate:zod:v1 && npm run generate:zod:v2 && npm run generate:zod:v2:core-schemas && npm run generate:zod:attributes"
   },
-  "author": "Nirmal",
+  "author": "Nirmal N R & Ameet Deshpande",
   "license": "MIT",
   "dependencies": {
     "axios": "^1.11.0",
