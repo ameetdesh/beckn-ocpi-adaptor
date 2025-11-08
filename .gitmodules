@@ -1,0 +1,4 @@
+[submodule "specs/beckn-protocol-specifications"]
+	path = specs/beckn-protocol-specifications
+	url = https://github.com/beckn/protocol-specifications-new/
+	branch = draft
