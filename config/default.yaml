@@ -39,7 +39,7 @@ cache:
   password: ${REDIS_PASSWORD}
   ttl_seconds: 300
 
-clickhouse:
+clickhouse: # for logging
   host: 127.0.0.1
   port: 8123
   database: default
