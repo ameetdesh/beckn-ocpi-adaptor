@@ -51,7 +51,13 @@ export interface AppConfig {
             refresh_ocpi_cache_on_startup: boolean;
             use_cache: boolean;
         };
-    }
+    };
+    cache: {
+        host: string;
+        port: number;
+        password?: string;
+        ttl_seconds: number;
+    };
 }
 
 
@@ -82,7 +88,10 @@ const validateConfig = (config: AppConfig) => {
         'app.defaults.item_name',
         'app.initialization.run_migrations_on_startup',
         'app.initialization.refresh_ocpi_cache_on_startup',
-        'app.initialization.use_cache'
+        'app.initialization.use_cache',
+        'cache.host',
+        'cache.port',
+        'cache.ttl_seconds'
     ];
 
     const missingFields = requiredFields.filter(field => {
@@ -121,6 +130,16 @@ const validateConfig = (config: AppConfig) => {
     const validBecknVersions = ['1.0', '2.0'] as const;
     if (!validBecknVersions.includes(config.beckn.version)) {
         throw new Error(`beckn.version must be one of: ${validBecknVersions.join(', ')}.`);
+    }
+
+    config.cache.port = Number(config.cache.port);
+    if (Number.isNaN(config.cache.port) || config.cache.port <= 0) {
+        throw new Error('cache.port must be a positive number.');
+    }
+
+    config.cache.ttl_seconds = Number(config.cache.ttl_seconds);
+    if (Number.isNaN(config.cache.ttl_seconds) || config.cache.ttl_seconds <= 0) {
+        throw new Error('cache.ttl_seconds must be a positive number.');
     }
 
     // Validate discovery settings

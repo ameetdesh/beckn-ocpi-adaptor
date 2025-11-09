@@ -40,6 +40,7 @@ A TypeScript-based adaptor that bridges the Beckn Protocol with the Open Charge 
 ## Prerequisites
 
 - Node.js 16+
+- Redis 6+
 - PostgreSQL 12+
 - npm or yarn
 - OCPI 2.2+ compatible server credentials
@@ -103,6 +104,11 @@ beckn:
   bpp_uri: https://your-bpp-uri.com  # Base URI for your BPP
   protocol_server_url: https://protocol-server.example.com  # Beckn Protocol Server URL
 
+cache:
+  host: 127.0.0.1  # Redis host
+  port: 6379       # Redis port
+  ttl_seconds: 300 # Default TTL for cached OCPI data
+
 # Application specific configuration
 app:
   discovery:
@@ -145,6 +151,13 @@ app:
   - Example: `https://bpp.example.com`
 - `beckn.protocol_server_url`: Beckn Protocol Server URL
   - Example: `https://protocol.example.com`
+
+- `cache.host`: Redis host
+  - Example: `127.0.0.1`
+- `cache.port`: Redis port
+  - Example: `6379`
+- `cache.ttl_seconds`: Default TTL (in seconds) for cached OCPI payloads
+  - Example: `300`
 
 #### Application Settings
 - `app.discovery.default_radius_meters`: Default search radius in meters

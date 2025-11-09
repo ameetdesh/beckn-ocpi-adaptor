@@ -16,7 +16,7 @@ ocpi:
 
 # Beckn Protocol Configuration
 beckn:
-  version: "1.0"
+  version: "1.0" # Supported versions: "1.0", "2.0"
   bpp_id: ${BPP_ID}
   bpp_uri: ${BPP_URI}
   protocol_server_url: ${PROTOCOL_SERVER_URL}
@@ -30,10 +30,16 @@ app:
   initialization:
     run_migrations_on_startup: false
     refresh_ocpi_cache_on_startup: false
-    use_cache: false
+    use_cache: true
   defaults:
     item_name: 'EV Charger'
   cancellation_terms:
     - fulfillment_state: confirmed
       cancellation_fee:
         percentage: 30
+
+cache:
+  host: 127.0.0.1
+  port: 6379
+  ttl_seconds: 300
+  password: ${REDIS_PASSWORD}
