@@ -16,6 +16,7 @@ ocpi:
 
 # Beckn Protocol Configuration
 beckn:
+  version: "1.0"
   bpp_id: ${BPP_ID}
   bpp_uri: ${BPP_URI}
   protocol_server_url: ${PROTOCOL_SERVER_URL}

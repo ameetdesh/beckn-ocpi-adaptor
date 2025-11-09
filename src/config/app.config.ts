@@ -21,6 +21,7 @@ export interface AppConfig {
         auth_key: string;
     };
     beckn: {
+        version: '1.0' | '2.0';
         bpp_id: string;
         bpp_uri: string;
         protocol_server_url: string;
@@ -60,6 +61,10 @@ const validateConfig = (config: AppConfig) => {
         (config as any).app.initialization.use_cache = true;
     }
 
+    if ((config as any).beckn?.version === undefined) {
+        (config as any).beckn.version = '1.0';
+    }
+
     // --- Required Fields Validation ---
     const requiredFields = [
         'node_env',
@@ -67,6 +72,7 @@ const validateConfig = (config: AppConfig) => {
         'database.url',
         'ocpi.url',
         'ocpi.auth_key',
+        'beckn.version',
         'beckn.bpp_id',
         'beckn.bpp_uri',
         'beckn.protocol_server_url',
@@ -110,6 +116,11 @@ const validateConfig = (config: AppConfig) => {
     const validNodeEnvs = ['development', 'production', 'test'] as const;
     if (!validNodeEnvs.includes(config.node_env)) {
         throw new Error(`NODE_ENV must be one of: ${validNodeEnvs.join(', ')}.`);
+    }
+
+    const validBecknVersions = ['1.0', '2.0'] as const;
+    if (!validBecknVersions.includes(config.beckn.version)) {
+        throw new Error(`beckn.version must be one of: ${validBecknVersions.join(', ')}.`);
     }
 
     // Validate discovery settings

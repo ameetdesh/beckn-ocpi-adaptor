@@ -98,6 +98,7 @@ ocpi:
 
 # Beckn Protocol Configuration
 beckn:
+  version: "1.0"  # Beckn protocol version (1.0 or 2.0)
   bpp_id: your_bpp_id  # Your Beckn Protocol Provider ID
   bpp_uri: https://your-bpp-uri.com  # Base URI for your BPP
   protocol_server_url: https://protocol-server.example.com  # Beckn Protocol Server URL
@@ -136,6 +137,8 @@ app:
 - `ocpi.auth_key`: Authentication key for OCPI API
 
 #### Beckn
+- `beckn.version`: Target Beckn protocol version
+  - `"1.0"` or `"2.0"`
 - `beckn.bpp_id`: Your Beckn Protocol Provider ID
   - Example: `bpp.example.com`
 - `beckn.bpp_uri`: Base URI for your BPP

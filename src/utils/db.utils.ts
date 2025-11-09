@@ -5,7 +5,7 @@ import { LocationData } from '../models/location.model';
 import { TariffData } from '../models/tariff.model';
 import { PriceComponentData } from '../models/priceComponent.model';
 import { ItemData } from '../models/item.model';
-import { Buffer } from 'node:buffer';
+import { Buffer } from 'buffer';
 
 // Helper to execute queries with proper error handling
 const query = async (text: string, params: any[] = []) => {
