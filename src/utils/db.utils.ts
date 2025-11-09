@@ -1,5 +1,3 @@
-import type { PoolClient } from 'pg';
-import { pool } from '../db/index';
 import { appConfig } from '../config/app.config';
 import type { LocationData } from '../models/location.model';
 import type { ItemData } from '../models/item.model';
@@ -20,20 +18,6 @@ const loadSnapshot = async (): Promise<OCPIDataSnapshot> => {
     }
 
     return refreshOCPIcache();
-};
-
-export const withTransaction = async (callback: (client: PoolClient) => Promise<void>) => {
-    const client = await pool.connect();
-    try {
-        await client.query('BEGIN');
-        await callback(client);
-        await client.query('COMMIT');
-    } catch (error) {
-        await client.query('ROLLBACK');
-        throw error;
-    } finally {
-        client.release();
-    }
 };
 
 export const getAllLocations = async (): Promise<LocationData[]> => {

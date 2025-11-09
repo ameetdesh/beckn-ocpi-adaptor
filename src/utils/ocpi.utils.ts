@@ -1,7 +1,7 @@
 import axios from 'axios';
 import { v4 as uuidv4 } from 'uuid';
 import { appConfig } from '../config/app.config';
-import { insertLog } from '../routes/logs';
+import { insertLog } from '../logging/log.service';
 import { Context } from '../types/beckn';
 import type { OCPILocation, OCPITariff, OCPIEVSE } from '../types/ocpi';
 import type { LocationData } from '../models/location.model';
@@ -189,7 +189,7 @@ export const checkEVSEStatus = async (locationId: string, evseUid: string, conte
         const endpoint = `/locations/${locationId}/${evseUid}`;
         const evse = await fetchFromOCPI<OCPIEVSE>(endpoint);
 
-        insertLog({
+        await insertLog({
             id: uuidv4(),
             transaction_id: context?.transaction_id || '',
             message_id: context?.message_id || '',
@@ -203,6 +203,8 @@ export const checkEVSEStatus = async (locationId: string, evseUid: string, conte
             status_code: 200,
             request_data: {},
             response_data: evse
+        }).catch(error => {
+            console.error(`[${new Date().toISOString()}] Failed to write OCPI log`, error);
         });
 
         return evse.status;

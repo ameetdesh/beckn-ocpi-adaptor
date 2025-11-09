@@ -15,7 +15,6 @@ import { fulfillment_mapping } from '../../models/mappings/fulfillment.jsonata';
 import { checkEVSEStatus } from '../ocpi.utils';
 import { appConfig } from '../../config/app.config';
 import { provider_mapping } from '../../models/mappings/provider.jsonata';
-import { ItemData } from '../../models/item.model';
 import type { CachedItem } from '../../cache/ocpiCache';
 
 

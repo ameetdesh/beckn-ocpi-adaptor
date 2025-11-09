@@ -1,8 +1,8 @@
 import express, { Request, Response, NextFunction } from 'express';
 import routes from './routes';
-import { runMigrations } from './db';
 import { refreshOCPIcache } from './utils/ocpi.utils';
 import { appConfig } from './config/app.config';
+import { initLogStore } from './logging/log.service';
 
 const app = express();
 const PORT = appConfig.port;
@@ -37,14 +37,10 @@ app.listen(PORT, () => {
 });
 
 async function main() {
-    const { run_migrations_on_startup, refresh_ocpi_cache_on_startup } = appConfig.app.initialization;
+    const { refresh_ocpi_cache_on_startup } = appConfig.app.initialization;
 
-    if (run_migrations_on_startup) {
-        await runMigrations();
-        console.log(`[${new Date().toISOString()}] Database initialized and migrations applied`);
-    } else {
-        console.log(`[${new Date().toISOString()}] Skipping database migrations (disabled via configuration)`);
-    }
+    await initLogStore();
+    console.log(`[${new Date().toISOString()}] ClickHouse log store ready`);
 
     if (refresh_ocpi_cache_on_startup) {
         await refreshOCPIcache();

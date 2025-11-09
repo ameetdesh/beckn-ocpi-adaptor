@@ -6,5 +6,20 @@ services:
     command: ["redis-server", "--appendonly", "yes", "--requirepass", "${REDIS_PASSWORD}"]
     volumes:
       - redis-data:/data
+
+  clickhouse:
+    image: clickhouse/clickhouse-server:23-alpine
+    ports:
+      - "8123:8123"   # HTTP interface
+      - "9000:9000"   # Native TCP interface (optional)
+    environment:
+      CLICKHOUSE_DB: default
+      CLICKHOUSE_USER: default
+      CLICKHOUSE_PASSWORD: yourStrongPassword
+    volumes:
+      - clickhouse-data:/var/lib/clickhouse
+
 volumes:
   redis-data:
+  clickhouse-data:
+

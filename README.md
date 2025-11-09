@@ -41,7 +41,7 @@ A TypeScript-based adaptor that bridges the Beckn Protocol with the Open Charge 
 
 - Node.js 16+
 - Redis 6+
-- PostgreSQL 12+
+- ClickHouse 23+
 - npm or yarn
 - OCPI 2.2+ compatible server credentials
 
@@ -88,10 +88,6 @@ All configuration is done through the configuration file. The default configurat
 node_env: development  # development, production, or test
 port: 3000  # Port to run the server on
 
-# Database configuration
-database:
-  url: postgresql://user:password@localhost:5432/beckn_ocpi  # PostgreSQL connection URL
-
 # OCPI Configuration
 ocpi:
   url: https://ocpi.example.com/ocpi/cpo/2.2.1  # Base URL for OCPI API
@@ -107,7 +103,16 @@ beckn:
 cache:
   host: 127.0.0.1  # Redis host
   port: 6379       # Redis port
+  password: ${REDIS_PASSWORD}   # Redis password (set in environment)
   ttl_seconds: 300 # Default TTL for cached OCPI data
+
+clickhouse:
+  host: 127.0.0.1      # ClickHouse host
+  port: 8123           # ClickHouse HTTP port
+  database: default    # Database where logs are stored
+  username: default    # ClickHouse username
+  password: ""         # ClickHouse password (blank if not set)
+  log_table: app_logs  # Table used to persist application logs
 
 # Application specific configuration
 app:
@@ -116,7 +121,6 @@ app:
     standard_session_kwh: 1      # Default session size in kWh
     share_location_details: true  # Whether to share location details on discovery
   initialization:
-    run_migrations_on_startup: true  # Run database migrations during startup
     refresh_ocpi_cache_on_startup: true  # Refresh the OCPI cache during startup
     use_cache: true  # Use the database cache instead of calling OCPI live for discovery data
   
@@ -131,11 +135,6 @@ app:
 ```
 
 ### Configuration Reference
-
-#### Database
-- `database.url`: PostgreSQL connection string
-  - Format: `postgresql://username:password@host:port/database`
-  - Example: `postgresql://postgres:postgres@localhost:5432/beckn_ocpi`
 
 #### OCPI
 - `ocpi.url`: Base URL of the OCPI server
@@ -156,8 +155,17 @@ app:
   - Example: `127.0.0.1`
 - `cache.port`: Redis port
   - Example: `6379`
+- `cache.password`: Redis password used when authentication is enabled
+  - Example: `${REDIS_PASSWORD}`
 - `cache.ttl_seconds`: Default TTL (in seconds) for cached OCPI payloads
   - Example: `300`
+- `clickhouse.host`: ClickHouse server host
+- `clickhouse.port`: ClickHouse HTTP port (default `8123`)
+- `clickhouse.database`: Target database for log storage
+- `clickhouse.username`: ClickHouse username (default `default`)
+- `clickhouse.password`: ClickHouse password
+- `clickhouse.log_table`: Table name for application logs (default `app_logs`)
+
 
 #### Application Settings
 - `app.discovery.default_radius_meters`: Default search radius in meters
@@ -165,8 +173,6 @@ app:
 - `app.discovery.standard_session_kwh`: Default session size in kWh
   - Example: `1`
 - `app.discovery.share_location_details`: Whether to share location details
-  - `true` or `false`
-- `app.initialization.run_migrations_on_startup`: Runs database migrations when the adaptor boots
   - `true` or `false`
 - `app.initialization.refresh_ocpi_cache_on_startup`: Refreshes the OCPI cache when the adaptor boots
   - `true` or `false`

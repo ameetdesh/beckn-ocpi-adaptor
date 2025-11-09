@@ -13,9 +13,6 @@ dotenv.config();
 export interface AppConfig {
     node_env: 'development' | 'production' | 'test';
     port: number;
-    database:{
-        url: string;
-    }
     ocpi: {
         url: string;
         auth_key: string;
@@ -47,16 +44,23 @@ export interface AppConfig {
             item_name: string;
         };
         initialization: {
-            run_migrations_on_startup: boolean;
             refresh_ocpi_cache_on_startup: boolean;
             use_cache: boolean;
         };
     };
     cache: {
         host: string;
-        port: number;
+       port: number;
         password?: string;
         ttl_seconds: number;
+    };
+    clickhouse: {
+        host: string;
+        port: number;
+        database: string;
+        username?: string;
+        password?: string;
+        log_table: string;
     };
 }
 
@@ -71,11 +75,14 @@ const validateConfig = (config: AppConfig) => {
         (config as any).beckn.version = '1.0';
     }
 
+    if (!config.clickhouse) {
+        throw new Error('clickhouse configuration is required');
+    }
+
     // --- Required Fields Validation ---
     const requiredFields = [
         'node_env',
         'port',
-        'database.url',
         'ocpi.url',
         'ocpi.auth_key',
         'beckn.version',
@@ -86,12 +93,14 @@ const validateConfig = (config: AppConfig) => {
         'app.discovery.standard_session_kwh',
         'app.discovery.share_location_details',
         'app.defaults.item_name',
-        'app.initialization.run_migrations_on_startup',
         'app.initialization.refresh_ocpi_cache_on_startup',
         'app.initialization.use_cache',
         'cache.host',
         'cache.port',
-        'cache.ttl_seconds'
+        'cache.ttl_seconds',
+        'clickhouse.host',
+        'clickhouse.port',
+        'clickhouse.database'
     ];
 
     const missingFields = requiredFields.filter(field => {
@@ -142,6 +151,15 @@ const validateConfig = (config: AppConfig) => {
         throw new Error('cache.ttl_seconds must be a positive number.');
     }
 
+    config.clickhouse.port = Number(config.clickhouse.port);
+    if (Number.isNaN(config.clickhouse.port) || config.clickhouse.port <= 0) {
+        throw new Error('clickhouse.port must be a positive number.');
+    }
+
+    if (!config.clickhouse.log_table || config.clickhouse.log_table.trim() === '') {
+        config.clickhouse.log_table = 'app_logs';
+    }
+
     // Validate discovery settings
     config.app.discovery.default_radius_meters = Number(config.app.discovery.default_radius_meters);
     if (isNaN(config.app.discovery.default_radius_meters) || config.app.discovery.default_radius_meters <= 0) {
@@ -155,10 +173,6 @@ const validateConfig = (config: AppConfig) => {
 
     if (typeof config.app.discovery.share_location_details !== 'boolean') {
         throw new Error('app.discovery.share_location_details must be a boolean');
-    }
-
-    if (typeof config.app.initialization.run_migrations_on_startup !== 'boolean') {
-        throw new Error('app.initialization.run_migrations_on_startup must be a boolean');
     }
 
     if (typeof config.app.initialization.refresh_ocpi_cache_on_startup !== 'boolean') {
@@ -286,8 +300,6 @@ const loadConfig = (): AppConfig => {
     if (config.ocpi.url) validateUrl(config.ocpi.url, 'ocpi.url');
     if (config.beckn.bpp_uri) validateUrl(config.beckn.bpp_uri, 'beckn.bpp_uri');
     if (config.beckn.protocol_server_url) validateUrl(config.beckn.protocol_server_url, 'beckn.protocol_server_url');
-    if (config.database.url) validateUrl(config.database.url, 'database_url');
-
     return config;
 };
 
