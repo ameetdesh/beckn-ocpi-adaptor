@@ -111,6 +111,7 @@ app:
   initialization:
     run_migrations_on_startup: true  # Run database migrations during startup
     refresh_ocpi_cache_on_startup: true  # Refresh the OCPI cache during startup
+    use_cache: true  # Use the database cache instead of calling OCPI live for discovery data
   
   # Cancellation terms (optional)
   cancellation_terms:
@@ -152,6 +153,8 @@ app:
 - `app.initialization.run_migrations_on_startup`: Runs database migrations when the adaptor boots
   - `true` or `false`
 - `app.initialization.refresh_ocpi_cache_on_startup`: Refreshes the OCPI cache when the adaptor boots
+  - `true` or `false`
+- `app.initialization.use_cache`: When `false`, discovery data is fetched live from the OCPI server instead of the database cache
   - `true` or `false`
 - `app.defaults.item_name`: Default item name
   - Example: `'EV Charger'`

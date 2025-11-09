@@ -29,6 +29,7 @@ app:
   initialization:
     run_migrations_on_startup: false
     refresh_ocpi_cache_on_startup: false
+    use_cache: false
   defaults:
     item_name: 'EV Charger'
   cancellation_terms:

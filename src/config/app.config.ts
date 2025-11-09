@@ -48,12 +48,18 @@ export interface AppConfig {
         initialization: {
             run_migrations_on_startup: boolean;
             refresh_ocpi_cache_on_startup: boolean;
+            use_cache: boolean;
         };
     }
 }
 
 
 const validateConfig = (config: AppConfig) => {
+    // Backwards-compatible default for use_cache
+    if ((config as any).app?.initialization?.use_cache === undefined) {
+        (config as any).app.initialization.use_cache = true;
+    }
+
     // --- Required Fields Validation ---
     const requiredFields = [
         'node_env',
@@ -69,7 +75,8 @@ const validateConfig = (config: AppConfig) => {
         'app.discovery.share_location_details',
         'app.defaults.item_name',
         'app.initialization.run_migrations_on_startup',
-        'app.initialization.refresh_ocpi_cache_on_startup'
+        'app.initialization.refresh_ocpi_cache_on_startup',
+        'app.initialization.use_cache'
     ];
 
     const missingFields = requiredFields.filter(field => {
@@ -126,6 +133,10 @@ const validateConfig = (config: AppConfig) => {
 
     if (typeof config.app.initialization.refresh_ocpi_cache_on_startup !== 'boolean') {
         throw new Error('app.initialization.refresh_ocpi_cache_on_startup must be a boolean');
+    }
+
+    if (typeof config.app.initialization.use_cache !== 'boolean') {
+        throw new Error('app.initialization.use_cache must be a boolean');
     }
 
     if (config.app.cancellation_terms) {

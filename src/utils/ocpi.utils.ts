@@ -21,7 +21,7 @@ import { Context } from '../types/beckn';
 const OCPI_URL = appConfig.ocpi.url;
 const OCPI_AUTH_KEY = appConfig.ocpi.auth_key;
 
-//Fetches data from OCPI API with error handling
+// Sends a GET request to the OCPI server, logging both success and error outcomes.
 export async function fetchFromOCPI<T>(endpoint: string): Promise<T> {
     try {
         const response = await ocpiClient.get<OCPIResponse<T>>(endpoint);
@@ -29,12 +29,13 @@ export async function fetchFromOCPI<T>(endpoint: string): Promise<T> {
             throw new Error(`OCPI API error: ${response.data.status_message}`);
         }
         return response.data.data;
-    } catch (error) {
+    } catch (error: any) {
         console.error(`[${new Date().toISOString()}] Error fetching from OCPI API (${endpoint}):`, error);
         throw error;
     }
 }
 
+// Refreshes the database cache by clearing the tables and re-pulling tariffs and locations from OCPI.
 export async function refreshOCPIcache() {
     try {
         await clearOCPIcache();
@@ -66,6 +67,7 @@ interface OCPIResponse<T> {
     timestamp: string;
 }
 
+// Pulls OCPI locations, logs the call, and persists the transformed data (locations/items) into the cache.
 export async function fetchAndStoreLocations(context?: Context) {
     try {
         const locations = await fetchFromOCPI<OCPILocation[]>('/locations');
@@ -154,6 +156,7 @@ export async function fetchAndStoreLocations(context?: Context) {
     }
 }
 
+// Fetches the status of a specific EVSE from OCPI and records the interaction in the logs.
 export async function checkEVSEStatus(location_id: string, evse_uid: string, context?: Context) {
     try {
         const endpoint = `/locations/${location_id}/${evse_uid}`;
@@ -163,7 +166,7 @@ export async function checkEVSEStatus(location_id: string, evse_uid: string, con
             id: uuidv4(),
             transaction_id: context?.transaction_id || '',
             message_id: context?.message_id || '',
-            bap_id: context?.bap_id || 'evcharging-bap.becknprotocol.io',
+            bap_id: context?.bap_id || '',
             protocol: 'ocpi',
             action: 'GET EVSE Status',
             stage: 'order',
@@ -182,6 +185,7 @@ export async function checkEVSEStatus(location_id: string, evse_uid: string, con
     }
 }
 
+// Retrieves OCPI tariffs, stores them (and their price components) in the database cache, and logs the call.
 export async function fetchAndStoreTariffs(context?: Context) {
     try {
 

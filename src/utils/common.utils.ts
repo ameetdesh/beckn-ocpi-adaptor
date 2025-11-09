@@ -73,6 +73,9 @@ export const createCatalogFromIntent = async (searchRequest: SearchReqBody) => {
 
     //filter locations based on radius
     const filteredLocations = locations.filter((location) => {
+        if (location.gps_latitude === undefined || location.gps_longitude === undefined) {
+            return false;
+        }
         const distance = findDistance(intentLatitude, intentLongitude, location.gps_latitude, location.gps_longitude);
         return distance <= intentRadiusMeters;
     });
