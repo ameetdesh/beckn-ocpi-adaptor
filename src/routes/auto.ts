@@ -8,17 +8,17 @@ const router = Router();
 //POST /auto
 router.post('/', async (req: Request, res: Response) => {
     const context = req.body.context;
-    const action = context.action;
+    const action = context?.action;
 
     switch (action) {
         case 'search':
-            searchHandler(req, res);
+            await searchHandler(req, res);
             break;
         case 'select':
-            selectHandler(req, res);
+            await selectHandler(req, res);
             break;
         case 'init':
-            initHandler(req, res);
+            await initHandler(req, res);
             break;
         default:
             res.status(400).json({
