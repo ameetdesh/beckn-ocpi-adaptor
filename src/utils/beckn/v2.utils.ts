@@ -135,6 +135,147 @@ const mapPaymentMethod = (method: string): BecknPaymentMethod | undefined => {
     }
 };
 
+const cloneDeep = <T>(value: T): T => JSON.parse(JSON.stringify(value));
+
+const isBecknV2OrderRequest = (payload: unknown): payload is {
+    context?: { version?: string };
+    message?: { order?: Record<string, unknown> };
+} => {
+    if (!payload || typeof payload !== 'object') return false;
+    const context = (payload as Record<string, unknown>).context;
+    const message = (payload as Record<string, unknown>).message;
+    if (!message || typeof message !== 'object') return false;
+    if (!('order' in message) || typeof (message as Record<string, unknown>).order !== 'object') return false;
+    if (!context || typeof context !== 'object') return false;
+    const version = (context as Record<string, unknown>).version;
+    return typeof version === 'string' && version.startsWith('2');
+};
+
+const normalizeDescriptor = (descriptor: unknown) => {
+    if (!descriptor || typeof descriptor !== 'object') return descriptor;
+    const descriptorRecord = { ...(descriptor as Record<string, unknown>) };
+    descriptorRecord['@type'] = 'beckn:Descriptor';
+    if (descriptorRecord.name && !descriptorRecord['schema:name']) {
+        descriptorRecord['schema:name'] = descriptorRecord.name;
+    }
+    if (descriptorRecord.short_desc && !descriptorRecord['beckn:shortDesc']) {
+        descriptorRecord['beckn:shortDesc'] = descriptorRecord.short_desc;
+    }
+    if (descriptorRecord.long_desc && !descriptorRecord['beckn:longDesc']) {
+        descriptorRecord['beckn:longDesc'] = descriptorRecord.long_desc;
+    }
+    delete descriptorRecord.name;
+    delete descriptorRecord.short_desc;
+    delete descriptorRecord.long_desc;
+    return descriptorRecord;
+};
+
+const normalizeAcceptedOffer = (
+    offer: Record<string, unknown>,
+    item: Record<string, unknown>,
+    seller: string | undefined
+) => {
+    if (!offer) return;
+
+    if (!offer['beckn:provider'] && seller) {
+        offer['beckn:provider'] = seller;
+    }
+
+    if (
+        (!Array.isArray(offer['beckn:items']) || offer['beckn:items']?.length === 0) &&
+        typeof item['beckn:orderedItem'] === 'string'
+    ) {
+        offer['beckn:items'] = [item['beckn:orderedItem']];
+    }
+
+    if (offer['beckn:descriptor']) {
+        offer['beckn:descriptor'] = normalizeDescriptor(offer['beckn:descriptor']);
+    }
+
+    const paymentMethods = offer['beckn:acceptedPaymentMethod'];
+    if (Array.isArray(paymentMethods)) {
+        const mapped = paymentMethods
+            .map(method => (typeof method === 'string' ? mapPaymentMethod(method) : undefined))
+            .filter((method): method is BecknPaymentMethod => Boolean(method));
+
+        if (mapped.length > 0) {
+            offer['beckn:acceptedPaymentMethod'] = mapped;
+        } else {
+            delete offer['beckn:acceptedPaymentMethod'];
+        }
+    }
+};
+
+const normalizeBecknOrderRequest = <T extends BecknV2SelectRequest | BecknV2InitRequest>(request: T): T => {
+    const normalized = cloneDeep(request);
+    const order = normalized?.message?.order as Record<string, unknown> | undefined;
+    if (!order) {
+        return normalized;
+    }
+
+    const sellerCandidate = order['beckn:seller'];
+    const seller =
+        typeof sellerCandidate === 'string' && sellerCandidate.trim().length > 0
+            ? sellerCandidate
+            : appConfig.beckn.bpp_id;
+
+    if (order['beckn:buyer'] && typeof order['beckn:buyer'] === 'object') {
+        const buyerRecord = order['beckn:buyer'] as Record<string, unknown>;
+        const buyerId =
+            buyerRecord['beckn:id'] ??
+            buyerRecord['id'] ??
+            buyerRecord['identifier'] ??
+            (typeof buyerRecord['phone'] === 'string' ? buyerRecord['phone'] : undefined);
+        if (buyerId != null) {
+            order['beckn:buyer'] = String(buyerId);
+        }
+    }
+
+    const orderItems = order['beckn:orderItems'];
+    if (Array.isArray(orderItems)) {
+        order['beckn:orderItems'] = orderItems.map(item => {
+            if (!item || typeof item !== 'object') return item;
+            const itemRecord = { ...(item as Record<string, unknown>) };
+
+            const acceptedOffer = itemRecord['beckn:acceptedOffer'];
+            if (acceptedOffer && typeof acceptedOffer === 'object') {
+                const offerRecord = { ...(acceptedOffer as Record<string, unknown>) };
+                normalizeAcceptedOffer(offerRecord, itemRecord, typeof seller === 'string' ? seller : undefined);
+                itemRecord['beckn:acceptedOffer'] = offerRecord;
+            }
+
+            return itemRecord;
+        });
+    }
+
+    if (order['beckn:payment'] && typeof order['beckn:payment'] === 'object') {
+        const paymentRecord = { ...(order['beckn:payment'] as Record<string, unknown>) };
+        if (Array.isArray(paymentRecord['beckn:acceptedPaymentMethod'])) {
+            const mapped = (paymentRecord['beckn:acceptedPaymentMethod'] as unknown[])
+                .map(method => (typeof method === 'string' ? mapPaymentMethod(method) : undefined))
+                .filter((method): method is BecknPaymentMethod => Boolean(method));
+            if (mapped.length > 0) {
+                paymentRecord['beckn:acceptedPaymentMethod'] = mapped;
+            } else {
+                delete paymentRecord['beckn:acceptedPaymentMethod'];
+            }
+        }
+        order['beckn:payment'] = paymentRecord;
+    }
+
+    return normalized;
+};
+
+const normalizeSelectRequest = (request: BecknV2SelectRequest | SelectRequest) => {
+    if (!isBecknV2OrderRequest(request)) return request;
+    return normalizeBecknOrderRequest(request as BecknV2SelectRequest);
+};
+
+const normalizeInitRequest = (request: BecknV2InitRequest | InitReqBody) => {
+    if (!isBecknV2OrderRequest(request)) return request;
+    return normalizeBecknOrderRequest(request as BecknV2InitRequest);
+};
+
 const computeMaxPowerKW = (item: CachedItem): number | undefined => {
     if (item.max_electric_power && item.max_electric_power > 0) {
         // OCPI max_electric_power is in Watts. Convert to kW if value appears to be > 1000.
@@ -449,57 +590,6 @@ const filterItems = (
         return true;
     });
 
-const normalizeSelectRequest = (
-    request: BecknV2SelectRequest | SelectRequest
-): BecknV2SelectRequest | SelectRequest => {
-    if (!request || typeof request !== 'object') return request;
-
-    const normalized = JSON.parse(JSON.stringify(request)) as BecknV2SelectRequest;
-    const order = normalized?.message?.order;
-    if (!order) {
-        return normalized;
-    }
-
-    const seller = order['beckn:seller'] ?? appConfig.beckn.bpp_id;
-
-    const orderItems = order['beckn:orderItems'];
-    if (Array.isArray(orderItems)) {
-        for (const item of orderItems) {
-            if (!item || typeof item !== 'object') continue;
-
-            const acceptedOffer = item['beckn:acceptedOffer'];
-            if (acceptedOffer && typeof acceptedOffer === 'object') {
-                if (!('beckn:provider' in acceptedOffer) && seller) {
-                    (acceptedOffer as Record<string, unknown>)['beckn:provider'] = seller;
-                }
-
-                const offerItems = (acceptedOffer as Record<string, unknown>)['beckn:items'];
-                if (
-                    (!Array.isArray(offerItems) || offerItems.length === 0) &&
-                    typeof item['beckn:orderedItem'] === 'string'
-                ) {
-                    (acceptedOffer as Record<string, unknown>)['beckn:items'] = [item['beckn:orderedItem']];
-                }
-
-                const paymentMethods = (acceptedOffer as Record<string, unknown>)['beckn:acceptedPaymentMethod'];
-                if (Array.isArray(paymentMethods)) {
-                    const mapped = paymentMethods
-                        .map(method => (typeof method === 'string' ? mapPaymentMethod(method) : undefined))
-                        .filter((method): method is BecknPaymentMethod => Boolean(method));
-
-                    if (mapped.length > 0) {
-                        (acceptedOffer as Record<string, unknown>)['beckn:acceptedPaymentMethod'] = mapped;
-                    } else {
-                        delete (acceptedOffer as Record<string, unknown>)['beckn:acceptedPaymentMethod'];
-                    }
-                }
-            }
-        }
-    }
-
-    return normalized;
-};
-
 const ensureResponse = (schema: z.ZodTypeAny, payload: unknown) => {
     try {
         return schema.parse(payload);
@@ -639,7 +729,8 @@ export const createOnSelectResponse = async (
 export const createOnInitResponse = async (
     request: BecknV2InitRequest | InitReqBody
 ): Promise<BecknV2OnInitResponse> => {
-    const parsed = BecknV2InitRequestSchema.parse(request);
+    const normalizedRequest = normalizeInitRequest(request);
+    const parsed = BecknV2InitRequestSchema.parse(normalizedRequest);
 
     const response: BecknV2OnInitResponse = {
         context: {
