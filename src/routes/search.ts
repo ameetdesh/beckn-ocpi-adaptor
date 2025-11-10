@@ -2,6 +2,7 @@ import { Request, Response, Router } from 'express';
 import type { OnSearchResponse, SearchReqBody } from '../types/beckn';
 import { createCatalogFromIntent } from '../utils/common.utils';
 import { createRouteHandler } from '../utils/routeHandlers.utils';
+import { appConfig } from '../config/app.config';
 
 const { sendAck, sendToProtocolServer, handleError } = createRouteHandler({
     action: 'search',
@@ -11,7 +12,17 @@ const { sendAck, sendToProtocolServer, handleError } = createRouteHandler({
 const router = Router();
 
 //POST /search
-router.post('/', async (req: Request, res: Response) => searchHandler(req, res));
+router.post('/', async (req: Request, res: Response) => {
+    if (appConfig.beckn.version === '2.0') {
+        res.status(501).json({
+            status: 'error',
+            message: 'search/on_search flow is not supported in Beckn v2. Please use discover/on_discover.'
+        });
+        return;
+    }
+
+    await searchHandler(req, res);
+});
 
 export default router;
 

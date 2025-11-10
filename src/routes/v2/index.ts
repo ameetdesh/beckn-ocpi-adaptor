@@ -1,12 +1,12 @@
 import { Router } from 'express';
-import searchRouter from './search';
 import selectRouter from './select';
 import initRouter from './init';
 import autoRouter from './auto';
+import discoverRouter from './discover';
 
 const router = Router();
 
-router.use('/search', searchRouter);
+router.use('/discover', discoverRouter);
 router.use('/select', selectRouter);
 router.use('/init', initRouter);
 router.use('/auto', autoRouter);

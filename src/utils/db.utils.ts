@@ -53,6 +53,11 @@ export const getAllTariffs = async (): Promise<CachedTariff[]> => {
     return snapshot.tariffs;
 };
 
+export const getAllItems = async (): Promise<CachedItem[]> => {
+    const snapshot = await loadSnapshot();
+    return snapshot.items;
+};
+
 export type ActiveTariff = {
     id: string;
     start_date_time?: string;
