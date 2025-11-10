@@ -26,33 +26,37 @@ export const getClickHouseClient = (): ClickHouseClient => {
 export const ensureLogTable = async () => {
     if (ensuringTable) return;
     ensuringTable = true;
-    const client = getClickHouseClient();
-    const table = LOG_TABLE();
+    try {
+        const client = getClickHouseClient();
+        const table = LOG_TABLE();
 
-    await client.exec({
-        query: `
-        CREATE TABLE IF NOT EXISTS ${table} (
-            id String,
-            created_at DateTime64(3, 'UTC') DEFAULT now(),
-            transaction_id String,
-            message_id String,
-            bap_id String,
-            protocol String,
-            action String,
-            stage String,
-            endpoint String,
-            method String,
-            status String,
-            status_code Nullable(Int32),
-            duration Nullable(Float64),
-            request_data Nullable(String),
-            response_data Nullable(String),
-            error_message Nullable(String)
-        )
-        ENGINE = MergeTree
-        ORDER BY (created_at, id)
-        `
-    });
+        await client.exec({
+            query: `
+            CREATE TABLE IF NOT EXISTS ${table} (
+                id String,
+                created_at DateTime64(3, 'UTC') DEFAULT now(),
+                transaction_id String,
+                message_id String,
+                bap_id String,
+                protocol String,
+                action String,
+                stage String,
+                endpoint String,
+                method String,
+                status String,
+                status_code Nullable(Int32),
+                duration Nullable(Float64),
+                request_data Nullable(String),
+                response_data Nullable(String),
+                error_message Nullable(String)
+            )
+            ENGINE = MergeTree
+            ORDER BY (created_at, id)
+            `
+        });
+    } finally {
+        ensuringTable = false;
+    }
 };
 
 export const getLogTableName = (): string => LOG_TABLE();

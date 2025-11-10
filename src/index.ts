@@ -39,8 +39,12 @@ app.listen(PORT, () => {
 async function main() {
     const { refresh_ocpi_cache_on_startup } = appConfig.app.initialization;
 
-    await initLogStore();
-    console.log(`[${new Date().toISOString()}] ClickHouse log store ready`);
+    const logStoreReady = await initLogStore();
+    if (logStoreReady) {
+        console.log(`[${new Date().toISOString()}] ClickHouse log store ready`);
+    } else {
+        console.warn(`[${new Date().toISOString()}] ClickHouse log store unavailable at startup. Logging will be best effort.`);
+    }
 
     if (refresh_ocpi_cache_on_startup) {
         await refreshOCPIcache();

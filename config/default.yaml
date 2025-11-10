@@ -34,14 +34,14 @@ app:
         percentage: 30
 
 cache:
-  host: 127.0.0.1
-  port: 6379
+  host: ${CACHE_HOST}
+  port: ${CACHE_PORT}
   password: ${REDIS_PASSWORD}
-  ttl_seconds: 300
+  ttl_seconds: ${CACHE_TTL_SECONDS}
 
 clickhouse: # for logging
-  host: 127.0.0.1
-  port: 8123
+  host: ${CLICKHOUSE_HOST}
+  port: ${CLICKHOUSE_PORT}
   database: default
   username: default
   password: ${CLICKHOUSE_PASSWORD}

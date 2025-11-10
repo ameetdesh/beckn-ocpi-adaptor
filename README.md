@@ -44,6 +44,7 @@ A TypeScript-based adaptor that bridges the Beckn Protocol with the Open Charge 
 - ClickHouse 23+
 - npm or yarn
 - OCPI 2.2+ compatible server credentials
+- Docker & Docker Compose (for container deployment)
 
 ## Local Installation
 
@@ -77,6 +78,58 @@ npm run dev
 ```
 
 
+## Container Deployment
+
+This repository ships with a production-ready `Dockerfile` and an extended `docker-compose.yml` inspired by the [beckn/sandbox](https://github.com/beckn/sandbox) project. The stack brings up the adaptor alongside Redis and ClickHouse with one command.
+
+### 1. Prepare environment variables
+
+```bash
+cp .env.example .env
+```
+
+Update the values for your deployment. When using Docker Compose, set the cache and ClickHouse hosts to the service names defined in the compose file:
+
+```env
+CACHE_HOST=redis
+CACHE_PORT=6379
+CACHE_TTL_SECONDS=300
+CLICKHOUSE_HOST=clickhouse
+CLICKHOUSE_PORT=8123
+```
+
+You can maintain a second `.env` (e.g. `.env.local`) with `CACHE_HOST=127.0.0.1` for non-container development and swap files by adjusting the `env_file` entry in `docker-compose.yml`.
+
+### 2. Start the stack with Docker Compose
+
+```bash
+docker compose up --build
+```
+
+Compose will provision:
+
+- `app`: the Beckn ↔ OCPI adaptor listening on port `4000`
+- `redis`: backing cache (data persisted in the `redis-data` volume)
+- `clickhouse`: log store (data persisted in the `clickhouse-data` volume)
+
+The compose file injects `.env` variables and overrides the cache/log hosts so the adaptor can talk to the companion containers immediately.
+
+### 3. Build & run the image manually (optional)
+
+```bash
+docker build -t beckn-ocpi-adaptor:latest .
+docker run --rm -p 4000:4000 \
+  --env-file .env \
+  -e CACHE_HOST=<redis-host> \
+  -e CACHE_PORT=6379 \
+  -e CLICKHOUSE_HOST=<clickhouse-host> \
+  -e CLICKHOUSE_PORT=8123 \
+  beckn-ocpi-adaptor:latest
+```
+
+Override `CACHE_HOST`/`CLICKHOUSE_HOST` with the addresses of your managed Redis or ClickHouse services. To load a non-default config file, append `--config /app/config/custom.yaml` to the container command (or override `command:` in the compose file).
+
+
 ## Configuration
 
 ### Configuration File
@@ -101,14 +154,14 @@ beckn:
   protocol_server_url: https://protocol-server.example.com  # Beckn Protocol Server URL
 
 cache:
-  host: 127.0.0.1  # Redis host
-  port: 6379       # Redis port
+  host: ${CACHE_HOST}     # Redis host (e.g. 127.0.0.1 locally, `redis` in Docker)
+  port: ${CACHE_PORT}     # Redis port (typically 6379)
   password: ${REDIS_PASSWORD}   # Redis password (set in environment)
-  ttl_seconds: 300 # Default TTL for cached OCPI data
+  ttl_seconds: ${CACHE_TTL_SECONDS} # Default TTL for cached OCPI data
 
 clickhouse:
-  host: 127.0.0.1      # ClickHouse host
-  port: 8123           # ClickHouse HTTP port
+  host: ${CLICKHOUSE_HOST}  # ClickHouse host (e.g. 127.0.0.1 locally, `clickhouse` in Docker)
+  port: ${CLICKHOUSE_PORT}  # ClickHouse HTTP port
   database: default    # Database where logs are stored
   username: default    # ClickHouse username
   password: ""         # ClickHouse password (blank if not set)
@@ -152,7 +205,7 @@ app:
   - Example: `https://protocol.example.com`
 
 - `cache.host`: Redis host
-  - Example: `127.0.0.1`
+  - Example: `127.0.0.1` (set to `redis` when running via docker compose)
 - `cache.port`: Redis port
   - Example: `6379`
 - `cache.password`: Redis password used when authentication is enabled

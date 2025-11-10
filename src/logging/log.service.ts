@@ -16,8 +16,35 @@ type LogQueryParams = {
     limit?: number;
 };
 
-export const initLogStore = async () => {
-    await ensureLogTable();
+const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
+
+export const initLogStore = async (): Promise<boolean> => {
+    const maxAttempts = Number(process.env.CLICKHOUSE_INIT_RETRIES ?? 10);
+    const baseDelayMs = Number(process.env.CLICKHOUSE_INIT_RETRY_DELAY_MS ?? 2000);
+
+    for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+        try {
+            await ensureLogTable();
+            return true;
+        } catch (error) {
+            const timestamp = new Date().toISOString();
+            if (attempt === maxAttempts) {
+                console.error(
+                    `[${timestamp}] Failed to initialize ClickHouse after ${attempt} attempts. Proceeding without log store.`,
+                    error
+                );
+                return false;
+            }
+
+            const delay = baseDelayMs * attempt;
+            console.warn(
+                `[${timestamp}] ClickHouse not reachable (attempt ${attempt}/${maxAttempts}). Retrying in ${delay}ms...`
+            );
+            await sleep(delay);
+        }
+    }
+
+    return false;
 };
 
 const stringifyMaybe = (value: unknown) => {

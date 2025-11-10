@@ -5,9 +5,9 @@
   "main": "index.js",
   "scripts": {
     "dev": "nodemon -r dotenv/config src/index.ts --",
-    "start": "node -r dotenv/config build/index.js",
+    "start": "node -r dotenv/config build/src/index.js",
     "test": "echo \"Error: no test specified\" && exit 1",
-    "build": "tsc && chmod 755 build/index.js",
+    "build": "tsc && chmod 755 build/src/index.js",
     "discovery": "node -r dotenv/config build/services/discovery.js",
     "generate:zod:v1": "node -e \"require('fs').mkdirSync('src/types/generated/beckn-v1', { recursive: true });\" && openapi-to-zod -i ref_docs/specs_yaml/simple-energy_EV_1.1.0_openapi_3.1.yaml -o src/types/generated/beckn-v1 --fileExt ts",
     "generate:zod:v2": "node -e \"require('fs').mkdirSync('src/types/generated/beckn-v2/core', { recursive: true });\" && openapi-to-zod -i specs/beckn-protocol-specifications/api-specs/beckn-protocol-api.yaml -o src/types/generated/beckn-v2/core --fileExt ts",
@@ -30,6 +30,7 @@
     "jsonata": "^2.1.0",
     "redis": "^4.7.1",
     "uuid": "^11.1.0",
+    "dotenv": "^17.2.1",
     "zod": "^3.25.76"
   },
   "devDependencies": {
@@ -39,7 +40,6 @@
     "@types/js-yaml": "^4.0.9",
     "@types/node": "^24.3.0",
     "@types/uuid": "^10.0.0",
-    "dotenv": "^17.2.1",
     "nodemon": "^3.1.10",
     "ocpi-types-typescript": "^0.1.0",
     "openapi-to-zod": "^0.0.9",
