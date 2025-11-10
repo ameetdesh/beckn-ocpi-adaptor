@@ -38,6 +38,16 @@ const CHARGING_OFFER_CONTEXT =
 
 type ConnectorLookup = Record<string, { beckn: string; notes?: string }>;
 
+type BecknPriceComponentType = 'UNIT' | 'TAX' | 'DELIVERY' | 'DISCOUNT' | 'FEE' | 'SURCHARGE';
+type BecknPaymentMethod =
+    | 'UPI'
+    | 'CreditCard'
+    | 'DebitCard'
+    | 'Wallet'
+    | 'BankTransfer'
+    | 'Cash'
+    | 'ApplePay';
+
 let connectorLookupCache: ConnectorLookup | null = null;
 
 const loadConnectorLookup = (): ConnectorLookup => {
@@ -80,8 +90,6 @@ const mapPowerType = (powerType?: string): string | undefined => {
     }
 };
 
-type BecknPriceComponentType = 'UNIT' | 'TAX' | 'DELIVERY' | 'DISCOUNT' | 'FEE' | 'SURCHARGE';
-
 const mapPriceComponentType = (type?: string): BecknPriceComponentType | undefined => {
     if (!type) return undefined;
     switch (type.toUpperCase()) {
@@ -93,6 +101,35 @@ const mapPriceComponentType = (type?: string): BecknPriceComponentType | undefin
         case 'RESERVATION':
         case 'FLAT':
             return 'FEE';
+        default:
+            return undefined;
+    }
+};
+
+const mapPaymentMethod = (method: string): BecknPaymentMethod | undefined => {
+    const normalized = method.trim().toLowerCase();
+    switch (normalized) {
+        case 'upi':
+            return 'UPI';
+        case 'creditcard':
+        case 'credit_card':
+        case 'card':
+            return 'CreditCard';
+        case 'debitcard':
+        case 'debit_card':
+            return 'DebitCard';
+        case 'wallet':
+            return 'Wallet';
+        case 'banktransfer':
+        case 'bank_transfer':
+        case 'netbanking':
+        case 'net_banking':
+            return 'BankTransfer';
+        case 'cash':
+            return 'Cash';
+        case 'applepay':
+        case 'apple_pay':
+            return 'ApplePay';
         default:
             return undefined;
     }
@@ -412,6 +449,57 @@ const filterItems = (
         return true;
     });
 
+const normalizeSelectRequest = (
+    request: BecknV2SelectRequest | SelectRequest
+): BecknV2SelectRequest | SelectRequest => {
+    if (!request || typeof request !== 'object') return request;
+
+    const normalized = JSON.parse(JSON.stringify(request)) as BecknV2SelectRequest;
+    const order = normalized?.message?.order;
+    if (!order) {
+        return normalized;
+    }
+
+    const seller = order['beckn:seller'] ?? appConfig.beckn.bpp_id;
+
+    const orderItems = order['beckn:orderItems'];
+    if (Array.isArray(orderItems)) {
+        for (const item of orderItems) {
+            if (!item || typeof item !== 'object') continue;
+
+            const acceptedOffer = item['beckn:acceptedOffer'];
+            if (acceptedOffer && typeof acceptedOffer === 'object') {
+                if (!('beckn:provider' in acceptedOffer) && seller) {
+                    (acceptedOffer as Record<string, unknown>)['beckn:provider'] = seller;
+                }
+
+                const offerItems = (acceptedOffer as Record<string, unknown>)['beckn:items'];
+                if (
+                    (!Array.isArray(offerItems) || offerItems.length === 0) &&
+                    typeof item['beckn:orderedItem'] === 'string'
+                ) {
+                    (acceptedOffer as Record<string, unknown>)['beckn:items'] = [item['beckn:orderedItem']];
+                }
+
+                const paymentMethods = (acceptedOffer as Record<string, unknown>)['beckn:acceptedPaymentMethod'];
+                if (Array.isArray(paymentMethods)) {
+                    const mapped = paymentMethods
+                        .map(method => (typeof method === 'string' ? mapPaymentMethod(method) : undefined))
+                        .filter((method): method is BecknPaymentMethod => Boolean(method));
+
+                    if (mapped.length > 0) {
+                        (acceptedOffer as Record<string, unknown>)['beckn:acceptedPaymentMethod'] = mapped;
+                    } else {
+                        delete (acceptedOffer as Record<string, unknown>)['beckn:acceptedPaymentMethod'];
+                    }
+                }
+            }
+        }
+    }
+
+    return normalized;
+};
+
 const ensureResponse = (schema: z.ZodTypeAny, payload: unknown) => {
     try {
         return schema.parse(payload);
@@ -527,7 +615,8 @@ export const createDiscoverCatalog = async (
 export const createOnSelectResponse = async (
     request: BecknV2SelectRequest | SelectRequest
 ): Promise<BecknV2OnSelectResponse> => {
-    const parsed = BecknV2SelectRequestSchema.parse(request);
+    const normalizedRequest = normalizeSelectRequest(request);
+    const parsed = BecknV2SelectRequestSchema.parse(normalizedRequest);
     const response: BecknV2OnSelectResponse = {
         context: {
             ...(parsed.context as Record<string, unknown>),
