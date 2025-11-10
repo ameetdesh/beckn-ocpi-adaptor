@@ -7,35 +7,21 @@ A TypeScript-based adaptor that bridges the Beckn Protocol with the Open Charge 
 ## Features
 
 - OCPI 2.2.1 compliant interface
-- Beckn Protocol v1.1 support
-- Location-based charging station discovery
-- Tariff mapping with price components
-- Quote Calculation based on CPO tariffs
+- Beckn Protocol v1.0 and v2.0 flows (switchable via configuration)
+- OCPI tariff and connector mapping with computed power profiles
+- Beckn v2 `discover` support with spatial filtering
+- Quote and order normalisation (offer/payment/buyer sanitisation)
+- Optional ClickHouse-backed logging with graceful fallback
 
 ## API Endpoints
 
-- POST /auto
-  - This endpoint is used to handle all the Beckn requests. This will route the request to the appropriate handler based on the action.
-- POST /search
-  - This endpoint is used to handle the search request.
-- POST /select
-  - This endpoint is used to handle the select request.
-- POST /init
-  - This endpoint is used to handle the init request.
-- GET /health
-  - This endpoint is used to check the health of the server. Returns 200 OK if server is up and running.
-- GET /beckn-logs
-  - This endpoint is used to get the logs of the server. Returns all the logs in JSON format. Supports the following query parameters:
-    - transaction_id
-    - message_id
-    - bap_id
-    - protocol
-    - action
-    - stage
-    - status
-    - method
-    - since
-    - limit
+- `POST /discover` – Beckn v2 discovery flow (returns an on_discover payload)
+- `POST /search` – Beckn v1 search handler (`501` when version is set to 2.0)
+- `POST /select` – Select handler (maps accepted offers & payment methods)
+- `POST /init` – Init handler (normalises buyer/offers before responding)
+- `POST /auto` – Smart dispatcher that routes to `search`, `select`, or `init` based on request context
+- `GET /beckn-logs` – Query ClickHouse-backed interaction logs (parameters: `transaction_id`, `message_id`, `bap_id`, `protocol`, `action`, `stage`, `status`, `method`, `since`, `limit`)
+- `GET /health` – Simple health check returning `200 OK`
 
 ## Prerequisites
 
@@ -273,13 +259,6 @@ Run discovery service:
 npm run discovery
 ```
 This can be scheduled to run at regular intervals using a task scheduler like cron.
-
-## API Endpoints
-
-- `POST /search` - Search for charging services
-- `POST /select` - Select a charging service
-- `GET /health` - Health check
-- `GET /beckn-logs` - Get application logs
 
 ## Contributing
 
