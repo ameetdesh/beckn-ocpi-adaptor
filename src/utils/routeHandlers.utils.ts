@@ -1,5 +1,5 @@
 import { v4 as uuidv4 } from 'uuid';
-import { insertLog } from '../routes/logs';
+import { insertLog } from '../logging/log.service';
 import { appConfig } from '../config/app.config';
 import { Request, Response } from 'express';
 import axios from 'axios';
@@ -31,6 +31,8 @@ export const createRouteHandler = (config: RouteHandlerConfig) => {
             status_code: 200,
             request_data: req.body,
             response_data: ack_response
+        }).catch(err => {
+            console.error(`[${new Date().toISOString()}] Failed to write ack log`, err);
         });
     };
 
@@ -47,21 +49,25 @@ export const createRouteHandler = (config: RouteHandlerConfig) => {
                                 ? 'success' 
                                 : 'error';
 
-        await insertLog({
-            id: uuidv4(),
-            transaction_id: context.transaction_id!,
-            message_id: context.message_id!,
-            bap_id: context.bap_id || '',
-            protocol: 'beckn',
-            action: `on_${action}`,
-            stage,
-            endpoint: `/on_${action}`,
-            method: 'POST',
-            status,
-            status_code: protocolServerResponse.status,
-            request_data: data,
-            response_data: protocolServerResponse.data
-        });
+        try {
+            await insertLog({
+                id: uuidv4(),
+                transaction_id: context.transaction_id!,
+                message_id: context.message_id!,
+                bap_id: context.bap_id || '',
+                protocol: 'beckn',
+                action: `on_${action}`,
+                stage,
+                endpoint: `/on_${action}`,
+                method: 'POST',
+                status,
+                status_code: protocolServerResponse.status,
+                request_data: data,
+                response_data: protocolServerResponse.data
+            });
+        } catch (error) {
+            console.error(`[${new Date().toISOString()}] Failed to write protocol response log`, error);
+        }
 
         console.log(`[${new Date().toISOString()}] On ${action} response sent to protocol server ${protocolServerUrl}`);
         console.log(`[${new Date().toISOString()}] Protocol server response status:`, protocolServerResponse.status, JSON.stringify(data));

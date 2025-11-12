@@ -1,8 +1,8 @@
 import express, { Request, Response, NextFunction } from 'express';
 import routes from './routes';
-import { runMigrations } from './db';
 import { refreshOCPIcache } from './utils/ocpi.utils';
 import { appConfig } from './config/app.config';
+import { initLogStore } from './logging/log.service';
 
 const app = express();
 const PORT = appConfig.port;
@@ -37,11 +37,21 @@ app.listen(PORT, () => {
 });
 
 async function main() {
-    // Initialize database
-    //await runMigrations();
-    console.log(`[${new Date().toISOString()}] Database initialized and migrations applied`);
-    //await refreshOCPIcache();
-    console.log(`[${new Date().toISOString()}] OCPI Cache refreshed`);
+    const { refresh_ocpi_cache_on_startup } = appConfig.app.initialization;
+
+    const logStoreReady = await initLogStore();
+    if (logStoreReady) {
+        console.log(`[${new Date().toISOString()}] ClickHouse log store ready`);
+    } else {
+        console.warn(`[${new Date().toISOString()}] ClickHouse log store unavailable at startup. Logging will be best effort.`);
+    }
+
+    if (refresh_ocpi_cache_on_startup) {
+        await refreshOCPIcache();
+        console.log(`[${new Date().toISOString()}] OCPI Cache refreshed`);
+    } else {
+        console.log(`[${new Date().toISOString()}] Skipping OCPI cache refresh (disabled via configuration)`);
+    }
 }
     
 main();

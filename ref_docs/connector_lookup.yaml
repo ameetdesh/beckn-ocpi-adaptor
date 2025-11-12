@@ -1,0 +1,40 @@
+ocpi_to_beckn_connector_map:
+  IEC_62196_T2: { beckn: Type2, notes: "Type 2 socket; default AC metered connector" }
+  IEC_62196_T2_COMBO: { beckn: CCS2, notes: "CCS Type 2 combo (European CCS)" }
+  CCS: { beckn: CCS2, notes: "Generic CCS entry mapped to CCS2" }
+  CHADEMO: { beckn: CHAdeMO, notes: "DC CHAdeMO gun" }
+  GBT_AC: { beckn: GB_T, notes: "GB/T AC connector" }
+  GBT_DC: { beckn: GB_T, notes: "GB/T DC connector" }
+  DOMESTIC_A: { beckn: not_found, notes: "No Beckn EV profile equivalent; typically home socket" }
+  DOMESTIC_B: { beckn: not_found, notes: "No Beckn EV profile equivalent" }
+  DOMESTIC_C: { beckn: not_found, notes: "No Beckn EV profile equivalent" }
+  DOMESTIC_D: { beckn: not_found, notes: "No Beckn EV profile equivalent" }
+  DOMESTIC_E: { beckn: not_found, notes: "No Beckn EV profile equivalent" }
+  DOMESTIC_F: { beckn: not_found, notes: "No Beckn EV profile equivalent" }
+  DOMESTIC_G: { beckn: not_found, notes: "No Beckn EV profile equivalent" }
+  DOMESTIC_H: { beckn: not_found, notes: "No Beckn EV profile equivalent" }
+  DOMESTIC_I: { beckn: not_found, notes: "No Beckn EV profile equivalent" }
+  DOMESTIC_J: { beckn: not_found, notes: "No Beckn EV profile equivalent" }
+  DOMESTIC_K: { beckn: not_found, notes: "No Beckn EV profile equivalent" }
+  DOMESTIC_L: { beckn: not_found, notes: "No Beckn EV profile equivalent" }
+  DOMESTIC_M: { beckn: not_found, notes: "No Beckn EV profile equivalent" }
+  DOMESTIC_N: { beckn: not_found, notes: "No Beckn EV profile equivalent" }
+  DOMESTIC_O: { beckn: not_found, notes: "No Beckn EV profile equivalent" }
+  IEC_62196_T1: { beckn: not_found, notes: "Type 1 not supported in current Beckn EV profile" }
+  IEC_62196_T1_COMBO: { beckn: CCS2, notes: "Assumed CCS2 equivalent for MSP UX; verify with operator" }
+  IEC_62196_T3A: { beckn: not_found, notes: "No Beckn EV profile equivalent" }
+  IEC_62196_T3C: { beckn: not_found, notes: "No Beckn EV profile equivalent" }
+  NEMA_5_20: { beckn: not_found, notes: "North America residential connector" }
+  NEMA_6_30: { beckn: not_found, notes: "North America industrial connector" }
+  NEMA_6_50: { beckn: not_found, notes: "North America industrial connector" }
+  NEMA_10_30: { beckn: not_found, notes: "North America legacy connector" }
+  NEMA_10_50: { beckn: not_found, notes: "North America legacy connector" }
+  NEMA_14_30: { beckn: not_found, notes: "North America residential connector" }
+  NEMA_14_50: { beckn: not_found, notes: "North America residential connector" }
+  PANTOGRAPH_BOTTOM_UP: { beckn: not_found, notes: "Depot pantograph; requires future Beckn enumeration" }
+  PANTOGRAPH_TOP_DOWN: { beckn: not_found, notes: "Depot pantograph; requires future Beckn enumeration" }
+  TESLA_R: { beckn: not_found, notes: "Tesla proprietary connector" }
+  TESLA_S: { beckn: not_found, notes: "Tesla proprietary connector" }
+  CHAOJI: { beckn: GB_T, notes: "Mapped to GB/T family until Beckn adds CHAOJI" }
+  GBT_AC_T2: { beckn: GB_T, notes: "Operator-specific alias for GB/T" }
+  default: { beckn: not_found, notes: "Fallback when no explicit mapping exists" }

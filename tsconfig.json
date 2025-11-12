@@ -4,7 +4,7 @@
       "module": "CommonJS",
       "moduleResolution": "Node",
       "outDir": "./build",
-      "rootDir": "./src",
+      "rootDir": ".",
       "strict": true,
       "esModuleInterop": true,
       "skipLibCheck": true,
@@ -12,6 +12,6 @@
       "resolveJsonModule": true,
       "sourceMap": true
     },
-    "include": ["src/**/*"],
-    "exclude": ["node_modules"]
+    "include": ["src/**/*", "specs/ocpi-schema/**/*.ts"],
+    "exclude": ["node_modules", "specs/ocpi-schema/ocpi.generate.ts"]
   }

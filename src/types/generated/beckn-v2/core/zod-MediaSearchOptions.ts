@@ -1,0 +1,3 @@
+import { z } from "zod";
+
+export default z.object({ "goals": z.array(z.enum(["visual-similarity","visual-object-detect","text-from-image","text-from-audio","semantic-audio-match","semantic-video-match"])).describe("Desired processing goals for the media.\n").optional(), "augment_text_search": z.boolean().describe("Whether to append extracted text from OCR/ASR to `text_search`.\n").default(true), "restrict_results_to_media_proximity": z.boolean().describe("Restrict results to spatial proximity of media-derived coordinates (e.g., EXIF GPS tags).\n").default(false) }).strict().describe("How the discovery engine should use the provided media inputs.");

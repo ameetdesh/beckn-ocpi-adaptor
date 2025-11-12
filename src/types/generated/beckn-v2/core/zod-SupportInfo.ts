@@ -1,0 +1,3 @@
+import { z } from "zod";
+
+export default z.object({ "name": z.string().describe("Name of the support organization or contact.").optional(), "phone": z.string().describe("Telephone number.").optional(), "email": z.string().email().describe("Support email address.").optional(), "url": z.string().url().describe("Webpage or chat endpoint for support.").optional(), "hours": z.string().describe("Human-readable support hours (local time).").optional(), "channels": z.array(z.enum(["phone","email","web","chat","whatsapp","in_app","other"])).describe("Available support channels.").optional() }).strict().describe("Canonical support contact for an entity, mapped to schema.org ContactPoint.\n");
