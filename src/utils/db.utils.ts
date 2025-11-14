@@ -20,10 +20,7 @@ const loadSnapshot = async (): Promise<OCPIDataSnapshot> => {
     return refreshOCPIcache();
 };
 
-export const getAllLocations = async (): Promise<LocationData[]> => {
-    const snapshot = await loadSnapshot();
-    return snapshot.locations;
-};
+export const getOcpiSnapshot = async (): Promise<OCPIDataSnapshot> => loadSnapshot();
 
 export const getLocationById = async (id: string): Promise<LocationData | null> => {
     const snapshot = await loadSnapshot();
@@ -46,16 +43,6 @@ export const getItemById = async (id: string | number): Promise<(ItemData & { id
     }
 
     return item ?? null;
-};
-
-export const getAllTariffs = async (): Promise<CachedTariff[]> => {
-    const snapshot = await loadSnapshot();
-    return snapshot.tariffs;
-};
-
-export const getAllItems = async (): Promise<CachedItem[]> => {
-    const snapshot = await loadSnapshot();
-    return snapshot.items;
 };
 
 export type ActiveTariff = {

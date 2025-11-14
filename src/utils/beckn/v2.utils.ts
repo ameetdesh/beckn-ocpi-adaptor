@@ -5,9 +5,8 @@ import type { z } from 'zod';
 
 import { appConfig } from '../../config/app.config';
 import {
-    getAllLocations,
-    getAllItems,
-    getAllTariffs,
+    getOcpiSnapshot,
+    getItemById,
     getActiveTariffWithComponents,
     type ActiveTariff
 } from '../db.utils';
@@ -28,6 +27,7 @@ import {
     type BecknV2OnInitResponse
 } from '../../types/becknV2';
 import type { InitReqBody, SelectRequest } from '../../types/beckn';
+import { checkEVSEStatus } from '../ocpi.utils';
 
 const CORE_CONTEXT =
     'https://raw.githubusercontent.com/beckn/protocol-specifications-new/refs/heads/draft/schema/core/v2/context.jsonld' as const;
@@ -274,6 +274,60 @@ const normalizeSelectRequest = (request: BecknV2SelectRequest | SelectRequest) =
 const normalizeInitRequest = (request: BecknV2InitRequest | InitReqBody) => {
     if (!isBecknV2OrderRequest(request)) return request;
     return normalizeBecknOrderRequest(request as BecknV2InitRequest);
+};
+
+type MinimalLogContext = {
+    transaction_id?: string;
+    message_id?: string;
+    bap_id?: string;
+};
+
+const getContextValue = (context: Record<string, unknown>, keys: string[]): string | undefined => {
+    for (const key of keys) {
+        const value = context[key];
+        if (typeof value === 'string' && value.trim().length > 0) {
+            return value;
+        }
+    }
+    return undefined;
+};
+
+const buildLogContext = (context: unknown): MinimalLogContext => {
+    if (!context || typeof context !== 'object') return {};
+    const ctxRecord = context as Record<string, unknown>;
+    return {
+        transaction_id: getContextValue(ctxRecord, ['transaction_id', 'transactionId', 'beckn:transactionId']),
+        message_id: getContextValue(ctxRecord, ['message_id', 'messageId', 'beckn:messageId']),
+        bap_id: getContextValue(ctxRecord, ['bap_id', 'bapId', 'beckn:bapId'])
+    };
+};
+
+const ensureEvseAvailability = async (
+    order: Record<string, unknown> | undefined,
+    logContext: MinimalLogContext
+) => {
+    if (!order) return;
+    const orderItems = order['beckn:orderItems'];
+    if (!Array.isArray(orderItems)) return;
+
+    for (const rawItem of orderItems) {
+        if (!rawItem || typeof rawItem !== 'object') continue;
+        const itemRecord = rawItem as Record<string, unknown>;
+        const orderedItemId = itemRecord['beckn:orderedItem'];
+        if (typeof orderedItemId !== 'string' || orderedItemId.trim().length === 0) {
+            continue;
+        }
+
+        const cachedItem = await getItemById(orderedItemId);
+        if (!cachedItem) {
+            throw new Error(`Ordered item ${orderedItemId} not found in OCPI snapshot`);
+        }
+
+        const status = await checkEVSEStatus(cachedItem.location_id, cachedItem.evse_uid, logContext);
+        if (!status || status.toUpperCase() !== 'AVAILABLE') {
+            throw new Error(`EVSE ${cachedItem.evse_uid} at location ${cachedItem.location_id} is not available`);
+        }
+    }
 };
 
 const computeMaxPowerKW = (item: CachedItem): number | undefined => {
@@ -608,11 +662,10 @@ export const createDiscoverCatalog = async (
 ): Promise<BecknV2DiscoverResponse | null> => {
     const discoverRequest = BecknV2DiscoverRequestSchema.parse(request);
 
-    const [locations, items, tariffs] = await Promise.all([
-        getAllLocations(), // TODO: 
-        getAllItems(),
-        getAllTariffs()
-    ]);
+    const snapshot = await getOcpiSnapshot();
+    const locations = snapshot.locations;
+    const items = snapshot.items;
+    const tariffs = snapshot.tariffs;
 
     const locationsById = new Map<string, LocationData>(
         locations.map(location => [location.id ?? '', location])
@@ -707,6 +760,10 @@ export const createOnSelectResponse = async (
 ): Promise<BecknV2OnSelectResponse> => {
     const normalizedRequest = normalizeSelectRequest(request);
     const parsed = BecknV2SelectRequestSchema.parse(normalizedRequest);
+    const orderRecord = parsed.message.order as unknown as Record<string, unknown>;
+    const logContext = buildLogContext(parsed.context as Record<string, unknown>);
+    await ensureEvseAvailability(orderRecord, logContext);
+
     const response: BecknV2OnSelectResponse = {
         context: {
             ...(parsed.context as Record<string, unknown>),
@@ -731,6 +788,9 @@ export const createOnInitResponse = async (
 ): Promise<BecknV2OnInitResponse> => {
     const normalizedRequest = normalizeInitRequest(request);
     const parsed = BecknV2InitRequestSchema.parse(normalizedRequest);
+    const orderRecord = parsed.message.order as unknown as Record<string, unknown>;
+    const logContext = buildLogContext(parsed.context as Record<string, unknown>);
+    await ensureEvseAvailability(orderRecord, logContext);
 
     const response: BecknV2OnInitResponse = {
         context: {

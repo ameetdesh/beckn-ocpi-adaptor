@@ -25,7 +25,7 @@ app:
     share_location_details: false  # Whether to share location details on discovery
   initialization:
     refresh_ocpi_cache_on_startup: false
-    use_cache: false
+    use_cache: true
   defaults:
     item_name: 'EV Charger'
   cancellation_terms:

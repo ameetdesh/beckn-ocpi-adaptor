@@ -1,8 +1,7 @@
-import axios from 'axios';
+import axios, { type AxiosError } from 'axios';
 import { v4 as uuidv4 } from 'uuid';
 import { appConfig } from '../config/app.config';
 import { insertLog } from '../logging/log.service';
-import { Context } from '../types/beckn';
 import type { OCPILocation, OCPITariff, OCPIEVSE } from '../types/ocpi';
 import type { LocationData } from '../models/location.model';
 import type { ItemData } from '../models/item.model';
@@ -34,6 +33,15 @@ interface OCPIResponse<T> {
     data: T;
     timestamp: string;
 }
+
+type FetchFromOCPIOptions = {
+    transactionId?: string;
+    messageId?: string;
+    action?: string;
+    stage?: string;
+    method?: 'GET' | 'POST' | 'PUT' | 'DELETE';
+    requestData?: Record<string, unknown>;
+};
 
 const toIsoString = (value: unknown): string | undefined => {
     if (!value) return undefined;
@@ -125,6 +133,12 @@ export const mapOcpiLocationToItems = (location: OCPILocation): CachedItem[] => 
 const mapOcpiLocationsToItems = (locations: OCPILocation[]): CachedItem[] =>
     locations.flatMap(mapOcpiLocationToItems);
 
+type LogContext = {
+    transaction_id?: string;
+    message_id?: string;
+    bap_id?: string;
+};
+
 const mapOcpiTariffsToCachedTariffs = (tariffs: OCPITariff[]): CachedTariff[] =>
     tariffs.map(tariff => ({
         id: tariff.id,
@@ -142,34 +156,102 @@ const mapOcpiTariffsToCachedTariffs = (tariffs: OCPITariff[]): CachedTariff[] =>
         )
     }));
 
-export const fetchFromOCPI = async <T>(endpoint: string): Promise<T> => {
+const fetchLocationsAndItems = async () => {
+    const locationsResponse = await fetchFromOCPI<OCPILocation[]>('/locations', {
+        action: 'Fetch OCPI locations',
+        stage: 'sync'
+    });
+    return {
+        locations: mapOcpiLocationsToLocationData(locationsResponse),
+        items: mapOcpiLocationsToItems(locationsResponse)
+    };
+};
+
+const fetchTariffs = async () => {
+    const tariffsResponse = await fetchFromOCPI<OCPITariff[]>('/tariffs', {
+        action: 'Fetch OCPI tariffs',
+        stage: 'sync'
+    });
+    return {
+        tariffs: mapOcpiTariffsToCachedTariffs(tariffsResponse)
+    };
+};
+
+const logOcpiCall = async (log: Parameters<typeof insertLog>[0]) => {
+    await insertLog(log).catch(error => {
+        console.error(`[${new Date().toISOString()}] Failed to write OCPI call log`, error);
+    });
+};
+
+export const fetchFromOCPI = async <T>(
+    endpoint: string,
+    options?: FetchFromOCPIOptions
+): Promise<T> => {
+    const method = options?.method ?? 'GET';
+    const action = options?.action ?? `OCPI ${method} ${endpoint}`;
+    const stage = options?.stage ?? 'ocpi';
+    const startedAt = Date.now();
+
     try {
         const response = await ocpiClient.get<OCPIResponse<T>>(endpoint);
         if (response.data.status_code >= 2000) {
             throw new Error(`OCPI API error: ${response.data.status_message}`);
         }
+
+        await logOcpiCall({
+            transaction_id: options?.transactionId ?? '',
+            message_id: options?.messageId ?? '',
+            bap_id: '',
+            protocol: 'ocpi',
+            action,
+            stage,
+            endpoint,
+            method,
+            status: 'success',
+            status_code: response.status,
+            duration: Date.now() - startedAt,
+            request_data: options?.requestData,
+            response_data: response.data.data
+        });
         return response.data.data;
-    } catch (error: any) {
+    } catch (error) {
+        const axiosError = error as AxiosError<{ status_code?: number; status_message?: string }>;
+        const statusCode = axiosError.response?.status;
+        const responseBody = axiosError.response?.data;
+
+        await logOcpiCall({
+            transaction_id: options?.transactionId ?? '',
+            message_id: options?.messageId ?? '',
+            bap_id: '',
+            protocol: 'ocpi',
+            action,
+            stage,
+            endpoint,
+            method,
+            status: 'error',
+            status_code: statusCode,
+            duration: Date.now() - startedAt,
+            request_data: options?.requestData,
+            response_data: responseBody as Record<string, unknown>,
+            error_message: axiosError.message
+        });
+
         console.error(`[${new Date().toISOString()}] Error fetching from OCPI API (${endpoint}):`, error);
         throw error;
     }
 };
 
 export const buildOCPIDataSnapshot = async (): Promise<OCPIDataSnapshot> => {
-    const [locationsResponse, tariffsResponse] = await Promise.all([
-        fetchFromOCPI<OCPILocation[]>('/locations'),
-        fetchFromOCPI<OCPITariff[]>('/tariffs')
+    const [locationData, tariffData] = await Promise.all([
+        fetchLocationsAndItems(),
+        fetchTariffs()
     ]);
-
-    const locations = mapOcpiLocationsToLocationData(locationsResponse);
-    const items = mapOcpiLocationsToItems(locationsResponse);
-    const tariffs = mapOcpiTariffsToCachedTariffs(tariffsResponse);
 
     return {
         fetched_at: new Date().toISOString(),
-        locations,
-        items,
-        tariffs
+        locations: locationData.locations,
+        items: locationData.items,
+        tariffs: tariffData.tariffs
     };
 };
 
@@ -184,27 +266,14 @@ export const refreshOCPIcache = async (): Promise<OCPIDataSnapshot> => {
     }
 };
 
-export const checkEVSEStatus = async (locationId: string, evseUid: string, context?: Context) => {
+export const checkEVSEStatus = async (locationId: string, evseUid: string, context?: LogContext) => {
     try {
         const endpoint = `/locations/${locationId}/${evseUid}`;
-        const evse = await fetchFromOCPI<OCPIEVSE>(endpoint);
-
-        await insertLog({
-            id: uuidv4(),
-            transaction_id: context?.transaction_id || '',
-            message_id: context?.message_id || '',
-            bap_id: context?.bap_id || '',
-            protocol: 'ocpi',
+        const evse = await fetchFromOCPI<OCPIEVSE>(endpoint, {
+            transactionId: context?.transaction_id,
+            messageId: context?.message_id,
             action: 'GET EVSE Status',
-            stage: 'order',
-            endpoint,
-            method: 'GET',
-            status: 'success',
-            status_code: 200,
-            request_data: {},
-            response_data: evse
-        }).catch(error => {
-            console.error(`[${new Date().toISOString()}] Failed to write OCPI log`, error);
+            stage: 'order'
         });
 
         return evse.status;

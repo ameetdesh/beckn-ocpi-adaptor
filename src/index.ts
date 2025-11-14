@@ -36,6 +36,17 @@ app.listen(PORT, () => {
     console.log(`[${new Date().toISOString()}] Server is running on http://localhost:${PORT}`);
 });
 
+process.on('unhandledRejection', (reason, promise) => {
+    console.error(
+        `[${new Date().toISOString()}] Unhandled promise rejection detected`,
+        { reason, promise }
+    );
+});
+
+process.on('uncaughtException', error => {
+    console.error(`[${new Date().toISOString()}] Uncaught exception detected`, error);
+});
+
 async function main() {
     const { refresh_ocpi_cache_on_startup } = appConfig.app.initialization;
 
@@ -51,6 +62,11 @@ async function main() {
         console.log(`[${new Date().toISOString()}] OCPI Cache refreshed`);
     } else {
         console.log(`[${new Date().toISOString()}] Skipping OCPI cache refresh (disabled via configuration)`);
+    }
+
+    // log if the cache is disabled
+    if (!appConfig.app.initialization.use_cache) {
+        console.log(`[${new Date().toISOString()}] OCPI cache usage is disabled via configuration`);
     }
 }
     

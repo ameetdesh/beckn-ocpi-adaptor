@@ -3,10 +3,9 @@ import type { SearchReqBody, InitReqBody, OnInitReqBody } from '../../types/beck
 import { locationWithRadiusSchema, Quote, Fulfillment } from '../../types/beckn';
 import {
     getActiveTariffWithComponents,
-    getAllLocations,
+    getOcpiSnapshot,
     getItemById,
     getLocationById,
-    getItemsByLocation,
     type ActiveTariff
 } from '../db.utils';
 import { error_messages } from '../error_codes';
@@ -65,7 +64,8 @@ const convertToMeters = (radius: number, unit: string) => {
 const resolveItemIdentifier = (rawId: string): string => rawId;
 
 export const createCatalogFromIntent = async (searchRequest: SearchReqBody) => {
-    const locations = await getAllLocations();
+    const snapshot = await getOcpiSnapshot();
+    const locations = snapshot.locations;
 
     let intentRadiusDefault = appConfig.app.discovery.default_radius_meters;
 
@@ -88,9 +88,8 @@ export const createCatalogFromIntent = async (searchRequest: SearchReqBody) => {
     });
     console.log(`[${new Date().toISOString()}] Locations within radius(${intentRadiusMeters}m)`, filteredLocations.length);
 
-    const filteredItems = (await Promise.all(
-        filteredLocations.map((location) => getItemsByLocation(location.id))
-    )).flat();
+    const filteredLocationIds = new Set(filteredLocations.map(location => location.id));
+    const filteredItems = snapshot.items.filter(item => filteredLocationIds.has(item.location_id));
     console.log(`[${new Date().toISOString()}] Items within radius(${intentRadiusMeters}m)`, filteredItems.length);
 
     const transformLocations = (locations: any[]) => {

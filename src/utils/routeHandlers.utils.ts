@@ -9,6 +9,24 @@ interface RouteHandlerConfig {
     stage: string;
 }
 
+const sanitizePayload = (payload: unknown, maxPreviewLength = 8000) => {
+    try {
+        const serialized = JSON.stringify(payload);
+        if (serialized.length <= maxPreviewLength) {
+            return payload;
+        }
+        return {
+            truncated: true,
+            preview: serialized.slice(0, maxPreviewLength)
+        };
+    } catch (error) {
+        return {
+            error: 'Unserializable payload',
+            message: (error as Error).message
+        };
+    }
+};
+
 export const createRouteHandler = (config: RouteHandlerConfig) => {
     const { action, stage } = config;
 
@@ -39,39 +57,69 @@ export const createRouteHandler = (config: RouteHandlerConfig) => {
     const sendToProtocolServer = async (data: any, context: any, is_error: boolean = false) => {
         const protocolServerUrl = new URL(appConfig.beckn.protocol_server_url);
         protocolServerUrl.pathname = `/on_${action}`;
-        const protocolServerResponse = await axios.post(protocolServerUrl.href, data, {
-            validateStatus: () => true
-        });
+        const sanitizedRequest = sanitizePayload(data);
 
-        const status = is_error 
-                            ? 'error' 
-                            : protocolServerResponse.status.toString().startsWith('2') 
-                                ? 'success' 
-                                : 'error';
+        let responseStatus = 0;
+        let responseBody: unknown = null;
+        let transportError: Error | null = null;
+
+        try {
+            const protocolServerResponse = await axios.post(protocolServerUrl.href, data, {
+                validateStatus: () => true
+            });
+            responseStatus = protocolServerResponse.status;
+            responseBody = protocolServerResponse.data;
+
+            console.log(
+                `[${new Date().toISOString()}] On ${action} response sent to protocol server ${protocolServerUrl}`
+            );
+            console.log(
+                `[${new Date().toISOString()}] Protocol server response status:`,
+                protocolServerResponse.status,
+                JSON.stringify(data)
+            );
+        } catch (error) {
+            transportError = error as Error;
+            console.error(
+                `[${new Date().toISOString()}] Failed to reach protocol server for on_${action}:`,
+                transportError
+            );
+        }
+
+        const succeeded = Boolean(!is_error && responseStatus && responseStatus >= 200 && responseStatus < 300 && !transportError);
+        const finalStatus = is_error ? 'error' : succeeded ? 'success' : 'error';
+        const sanitizedResponse = sanitizePayload(
+            responseBody ?? {
+                error: transportError?.message ?? 'No response body'
+            }
+        );
 
         try {
             await insertLog({
                 id: uuidv4(),
-                transaction_id: context.transaction_id!,
-                message_id: context.message_id!,
+                transaction_id: context.transaction_id ?? '',
+                message_id: context.message_id ?? '',
                 bap_id: context.bap_id || '',
                 protocol: 'beckn',
                 action: `on_${action}`,
                 stage,
                 endpoint: `/on_${action}`,
                 method: 'POST',
-                status,
-                status_code: protocolServerResponse.status,
-                request_data: data,
-                response_data: protocolServerResponse.data
+                status: finalStatus,
+                status_code: responseStatus || undefined,
+                request_data: sanitizedRequest,
+                response_data: sanitizedResponse,
+                error_message: transportError?.message
             });
         } catch (error) {
             console.error(`[${new Date().toISOString()}] Failed to write protocol response log`, error);
         }
 
-        console.log(`[${new Date().toISOString()}] On ${action} response sent to protocol server ${protocolServerUrl}`);
-        console.log(`[${new Date().toISOString()}] Protocol server response status:`, protocolServerResponse.status, JSON.stringify(data));
-
+        return {
+            success: succeeded,
+            statusCode: responseStatus,
+            error: transportError
+        };
     };
 
     const handleError = (error: any, req: Request, res: Response, context: any) => {
@@ -92,7 +140,12 @@ export const createRouteHandler = (config: RouteHandlerConfig) => {
             }
         };
 
-        sendToProtocolServer(errorResponse, context, true);
+        sendToProtocolServer(errorResponse, context, true).catch(err => {
+            console.error(
+                `[${new Date().toISOString()}] Failed to notify protocol server about ${action} error`,
+                err
+            );
+        });
     };
 
     return {
