@@ -4,11 +4,18 @@ import { appConfig } from '../config/app.config';
 let client: ClickHouseClient | null = null;
 let ensuringTable = false;
 
-const LOG_TABLE = () => appConfig.clickhouse.log_table ?? 'app_logs';
+const requireClickHouseConfig = () => {
+    if (!appConfig.clickhouse) {
+        throw new Error('ClickHouse configuration is missing but required for the current log store.');
+    }
+    return appConfig.clickhouse;
+};
+
+const LOG_TABLE = () => requireClickHouseConfig().log_table ?? 'app_logs';
 
 export const getClickHouseClient = (): ClickHouseClient => {
     if (!client) {
-        const { host, port, username, password, database } = appConfig.clickhouse;
+        const { host, port, username, password, database } = requireClickHouseConfig();
         const normalizedHost = host.startsWith('http')
             ? host
             : `http://${host}:${port}`;

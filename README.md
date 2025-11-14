@@ -140,6 +140,7 @@ beckn:
   protocol_server_url: https://protocol-server.example.com  # Beckn Protocol Server URL
 
 cache:
+  store: redis  # "redis" (default) or "noop"
   host: ${CACHE_HOST}     # Redis host (e.g. 127.0.0.1 locally, `redis` in Docker)
   port: ${CACHE_PORT}     # Redis port (typically 6379)
   password: ${REDIS_PASSWORD}   # Redis password (set in environment)
@@ -152,6 +153,9 @@ clickhouse:
   username: default    # ClickHouse username
   password: ""         # ClickHouse password (blank if not set)
   log_table: app_logs  # Table used to persist application logs
+
+logging:
+  store: noop  # "clickhouse" (persistent) or "noop" (in-memory no-op; default)
 
 # Application specific configuration
 app:
@@ -190,7 +194,8 @@ app:
 - `beckn.protocol_server_url`: Beckn Protocol Server URL
   - Example: `https://protocol.example.com`
 
-- `cache.host`: Redis host
+- `cache.store`: Selects the cache backend (`redis` by default, `noop` to disable persistence).
+- `cache.host`: Redis host (required when `cache.store` is `redis`)
   - Example: `127.0.0.1` (set to `redis` when running via docker compose)
 - `cache.port`: Redis port
   - Example: `6379`
@@ -204,6 +209,11 @@ app:
 - `clickhouse.username`: ClickHouse username (default `default`)
 - `clickhouse.password`: ClickHouse password
 - `clickhouse.log_table`: Table name for application logs (default `app_logs`)
+
+#### Logging
+- `logging.store`: Selects the log backend (`noop` by default).
+  - `clickhouse`: requires the `clickhouse.*` settings above (can also be set via the `LOG_STORE` env var).
+  - `noop`: disables persistent logging; ClickHouse settings may be omitted.
 
 
 #### Application Settings

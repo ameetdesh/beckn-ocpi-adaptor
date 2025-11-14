@@ -34,6 +34,7 @@ app:
         percentage: 30
 
 cache:
+  store: redis
   host: ${CACHE_HOST}
   port: ${CACHE_PORT}
   password: ${REDIS_PASSWORD}
@@ -46,3 +47,6 @@ clickhouse: # for logging
   username: default
   password: ${CLICKHOUSE_PASSWORD}
   log_table: app_logs
+
+logging:
+  store: noop # Supported values: "clickhouse", "noop"

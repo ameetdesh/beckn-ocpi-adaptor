@@ -50,11 +50,23 @@ process.on('uncaughtException', error => {
 async function main() {
     const { refresh_ocpi_cache_on_startup } = appConfig.app.initialization;
 
-    const logStoreReady = await initLogStore();
-    if (logStoreReady) {
-        console.log(`[${new Date().toISOString()}] ClickHouse log store ready`);
+    if (appConfig.logging.store === 'clickhouse') {
+        const logStoreReady = await initLogStore();
+        if (logStoreReady) {
+            console.log(`[${new Date().toISOString()}] ClickHouse log store ready`);
+        } else {
+            console.warn(`[${new Date().toISOString()}] ClickHouse log store unavailable at startup. Logging will be best effort.`);
+        }
     } else {
-        console.warn(`[${new Date().toISOString()}] ClickHouse log store unavailable at startup. Logging will be best effort.`);
+        console.warn(`[${new Date().toISOString()}] No log store selected; logs will not be persisted.`);
+    }
+
+    if (appConfig.cache.store == 'redis') {
+        console.log(`[${new Date().toISOString()}] Using Redis cache with TTL ${appConfig.cache.ttl_seconds}s`);
+    } else {
+        console.warn(
+            `[${new Date().toISOString()}] No external cache database selected; using in-memory snapshot cache with TTL ${appConfig.cache.ttl_seconds}s`
+        );
     }
 
     if (refresh_ocpi_cache_on_startup) {

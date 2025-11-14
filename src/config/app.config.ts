@@ -49,12 +49,16 @@ export interface AppConfig {
         };
     };
     cache: {
-        host: string;
-       port: number;
+        store: 'redis' | 'noop';
+        host?: string;
+        port?: number;
         password?: string;
         ttl_seconds: number;
     };
-    clickhouse: {
+    logging: {
+        store: 'clickhouse' | 'noop';
+    };
+    clickhouse?: {
         host: string;
         port: number;
         database: string;
@@ -75,8 +79,28 @@ const validateConfig = (config: AppConfig) => {
         (config as any).beckn.version = '1.0';
     }
 
-    if (!config.clickhouse) {
-        throw new Error('clickhouse configuration is required');
+    if (!config.cache) {
+        throw new Error('cache configuration is required');
+    }
+
+    if ((config as any).cache?.store === undefined) {
+        (config as any).cache.store = 'redis';
+    }
+
+    if (!['redis', 'noop'].includes(config.cache.store)) {
+        throw new Error('cache.store must be either "redis" or "noop"');
+    }
+
+    if (!(config as any).logging) {
+        (config as any).logging = { store: 'noop' };
+    }
+
+    if ((config as any).logging?.store === undefined) {
+        (config as any).logging.store = 'noop';
+    }
+
+    if (!['clickhouse', 'noop'].includes(config.logging.store)) {
+        throw new Error('app.logging.store must be either "clickhouse" or "noop"');
     }
 
     // --- Required Fields Validation ---
@@ -95,12 +119,9 @@ const validateConfig = (config: AppConfig) => {
         'app.defaults.item_name',
         'app.initialization.refresh_ocpi_cache_on_startup',
         'app.initialization.use_cache',
-        'cache.host',
-        'cache.port',
+        'cache.store',
         'cache.ttl_seconds',
-        'clickhouse.host',
-        'clickhouse.port',
-        'clickhouse.database'
+        'logging.store'
     ];
 
     const missingFields = requiredFields.filter(field => {
@@ -117,6 +138,32 @@ const validateConfig = (config: AppConfig) => {
 
     if (missingFields.length > 0) {
         throw new Error(`Missing required configuration fields: ${missingFields.join(', ')}`);
+    }
+
+    const needsClickHouse = config.logging.store === 'clickhouse';
+    const needsRedis = config.cache.store === 'redis';
+
+    if (needsClickHouse) {
+        if (!config.clickhouse) {
+            throw new Error('clickhouse configuration is required when logging.store is set to "clickhouse"');
+        }
+
+        const clickhouseFields = ['clickhouse.host', 'clickhouse.port', 'clickhouse.database'];
+        const missingClickhouse = clickhouseFields.filter(field => {
+            const parts = field.split('.');
+            let value: any = config;
+            for (const part of parts) {
+                if (value[part] === undefined || value[part] === '') {
+                    return true;
+                }
+                value = value[part];
+            }
+            return false;
+        });
+
+        if (missingClickhouse.length > 0) {
+            throw new Error(`Missing required ClickHouse configuration fields: ${missingClickhouse.join(', ')}`);
+        }
     }
 
     // Validate that if cancellation_terms exists, it's an array
@@ -141,9 +188,22 @@ const validateConfig = (config: AppConfig) => {
         throw new Error(`beckn.version must be one of: ${validBecknVersions.join(', ')}.`);
     }
 
-    config.cache.port = Number(config.cache.port);
-    if (Number.isNaN(config.cache.port) || config.cache.port <= 0) {
-        throw new Error('cache.port must be a positive number.');
+    if (needsRedis) {
+        if (!config.cache.host || config.cache.host.trim() === '') {
+            throw new Error('cache.host is required when cache.store is set to "redis"');
+        }
+
+        if (config.cache.port === undefined || config.cache.port === null) {
+            throw new Error('cache.port is required when cache.store is set to "redis"');
+        }
+
+        config.cache.port = Number(config.cache.port);
+        if (Number.isNaN(config.cache.port) || config.cache.port <= 0) {
+            throw new Error('cache.port must be a positive number.');
+        }
+    } else {
+        delete (config.cache as any).host;
+        delete (config.cache as any).port;
     }
 
     config.cache.ttl_seconds = Number(config.cache.ttl_seconds);
@@ -151,13 +211,15 @@ const validateConfig = (config: AppConfig) => {
         throw new Error('cache.ttl_seconds must be a positive number.');
     }
 
-    config.clickhouse.port = Number(config.clickhouse.port);
-    if (Number.isNaN(config.clickhouse.port) || config.clickhouse.port <= 0) {
-        throw new Error('clickhouse.port must be a positive number.');
-    }
+    if (needsClickHouse && config.clickhouse) {
+        config.clickhouse.port = Number(config.clickhouse.port);
+        if (Number.isNaN(config.clickhouse.port) || config.clickhouse.port <= 0) {
+            throw new Error('clickhouse.port must be a positive number.');
+        }
 
-    if (!config.clickhouse.log_table || config.clickhouse.log_table.trim() === '') {
-        config.clickhouse.log_table = 'app_logs';
+        if (!config.clickhouse.log_table || config.clickhouse.log_table.trim() === '') {
+            config.clickhouse.log_table = 'app_logs';
+        }
     }
 
     // Validate discovery settings
@@ -246,6 +308,18 @@ const loadConfig = (): AppConfig => {
 
     // Parse the resolved YAML string into a JavaScript object
     const config = yaml.load(resolvedYaml) as AppConfig;
+
+    const envCacheStore = process.env.CACHE_STORE?.trim();
+    if (envCacheStore) {
+        (config as any).cache = config.cache ?? {};
+        (config as any).cache.store = envCacheStore as 'redis' | 'noop';
+    }
+
+    const envLogStore = process.env.LOG_STORE?.trim();
+    if (envLogStore) {
+        (config as any).logging = config.logging ?? { store: 'noop' };
+        (config as any).logging.store = envLogStore as 'clickhouse' | 'noop';
+    }
 
     validateConfig(config);
 
