@@ -1,5 +1,5 @@
-[submodule "specs/beckn-protocol-specifications"]
-	path = specs/beckn-protocol-specifications
+[submodule "specs/beckn-schema/protocol_specifications_new"]
+	path = specs/beckn-schema/protocol_specifications_new
 	url = https://github.com/beckn/protocol-specifications-new/
 	branch = draft
 [submodule "specs/ocpi-schema"]
