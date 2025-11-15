@@ -1,0 +1,34 @@
+{
+  "name": "@beckn/ocpi-adaptor-core",
+  "version": "1.0.0",
+  "description": "Core SDK for converting OCPI data to Beckn protocol format",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "clean": "rm -rf dist",
+    "test:example": "ts-node src/examples/basic-usage.example.ts"
+  },
+  "devDependencies": {
+    "@types/node": "^24.3.0",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.9.2"
+  },
+  "keywords": [
+    "beckn",
+    "ocpi",
+    "ev-charging",
+    "sdk"
+  ],
+  "author": "Nirmal N R & Ameet Deshpande",
+  "license": "MIT",
+  "dependencies": {
+    "jsonata": "^2.1.0",
+    "uuid": "^11.1.0",
+    "zod": "^3.25.76"
+  },
+  "peerDependencies": {
+    "axios": "^1.11.0"
+  }
+}
+

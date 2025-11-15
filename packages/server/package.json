@@ -1,0 +1,34 @@
+{
+  "name": "@beckn/server",
+  "version": "1.0.0",
+  "description": "Express server implementation for @beckn/ocpi-adaptor-core",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "clean": "rm -rf dist",
+    "test:example": "ts-node src/examples/test-server.example.ts"
+  },
+  "keywords": [
+    "beckn",
+    "ocpi",
+    "express",
+    "server"
+  ],
+  "author": "Nirmal N R & Ameet Deshpande",
+  "license": "MIT",
+  "dependencies": {
+    "express": "^5.1.0",
+    "cors": "^2.8.5"
+  },
+  "peerDependencies": {
+    "@beckn/ocpi-adaptor-core": "*"
+  },
+  "devDependencies": {
+    "@types/cors": "^2.8.19",
+    "@types/express": "^5.0.3",
+    "@types/node": "^24.3.0",
+    "typescript": "^5.9.2"
+  }
+}
+

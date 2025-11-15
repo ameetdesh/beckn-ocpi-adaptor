@@ -24,7 +24,7 @@ app:
     standard_session_kwh: 1      # Assumed standard session of 1 kWh
     share_location_details: false  # Whether to share location details on discovery
   initialization:
-    refresh_ocpi_cache_on_startup: false
+    refresh_ocpi_cache_on_startup: true
     use_cache: true
   defaults:
     item_name: 'EV Charger'

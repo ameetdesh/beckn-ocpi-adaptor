@@ -1,0 +1,37 @@
+{
+  "name": "@beckn/log-clickhouse",
+  "version": "1.0.0",
+  "description": "ClickHouse log store implementation for @beckn/ocpi-adaptor-core",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "clean": "rm -rf dist",
+    "test:example": "ts-node src/examples/test-clickhouse.example.ts"
+  },
+  "devDependencies": {
+    "@types/node": "^24.3.0",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.9.2"
+  },
+  "keywords": [
+    "beckn",
+    "ocpi",
+    "clickhouse",
+    "logging"
+  ],
+  "author": "Nirmal N R & Ameet Deshpande",
+  "license": "MIT",
+  "dependencies": {
+    "@clickhouse/client": "^0.0.12",
+    "uuid": "^11.1.0"
+  },
+  "peerDependencies": {
+    "@beckn/ocpi-adaptor-core": "*"
+  },
+  "devDependencies": {
+    "@types/node": "^24.3.0",
+    "typescript": "^5.9.2"
+  }
+}
+
