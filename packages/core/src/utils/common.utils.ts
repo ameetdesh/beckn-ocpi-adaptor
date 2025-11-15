@@ -6,9 +6,6 @@ import type {
     SelectRequest,
     OnSelectResponse
 } from '../types/beckn';
-import { appConfig } from '../config/app.config';
-import * as becknV1 from './beckn/v1.utils';
-import * as becknV2 from './beckn/v2.utils';
 import type {
     BecknV2DiscoverRequest,
     BecknV2DiscoverResponse,
@@ -18,49 +15,63 @@ import type {
     BecknV2SelectRequest
 } from '../types/becknV2';
 
-type BecknAdapters = {
-    createCatalogFromIntent: (request: unknown) => Promise<unknown>;
-    createDiscoverCatalog?: (request: BecknV2DiscoverRequest) => Promise<BecknV2DiscoverResponse | null>;
-    createOnInitResponse: (request: unknown) => Promise<unknown>;
-    createOnSelectResponse: (request: unknown) => Promise<unknown>;
+export interface TransformationsDependencies {
+    becknVersion: '1.0' | '2.0';
+    v1Adapter: {
+        createCatalogFromIntent: (request: SearchReqBody) => Promise<OnSearchResponse | null>;
+        createOnInitResponse: (request: InitReqBody) => Promise<OnInitReqBody>;
+        createOnSelectResponse: (request: SelectRequest) => Promise<OnSelectResponse>;
+    };
+    v2Adapter: {
+        createCatalogFromIntent: (request: BecknV2DiscoverRequest) => Promise<BecknV2DiscoverResponse | null>;
+        createDiscoverCatalog: (request: BecknV2DiscoverRequest) => Promise<BecknV2DiscoverResponse | null>;
+        createOnInitResponse: (request: BecknV2InitRequest) => Promise<BecknV2OnInitResponse>;
+        createOnSelectResponse: (request: BecknV2SelectRequest) => Promise<BecknV2OnSelectResponse>;
+    };
+}
+
+export const createTransformations = (deps: TransformationsDependencies) => {
+    const adaptersByVersion = {
+        '1.0': deps.v1Adapter,
+        '2.0': deps.v2Adapter
+    };
+
+    const getAdapters = () => adaptersByVersion[deps.becknVersion];
+
+    return {
+        createCatalogFromIntent: (request: SearchReqBody | BecknV2DiscoverRequest): Promise<OnSearchResponse | BecknV2DiscoverResponse | null> => {
+            if (deps.becknVersion === '1.0') {
+                return getAdapters().createCatalogFromIntent(request as any) as Promise<OnSearchResponse | null>;
+            } else {
+                return getAdapters().createCatalogFromIntent(request as any) as Promise<BecknV2DiscoverResponse | null>;
+            }
+        },
+
+        createDiscoverCatalog: (request: BecknV2DiscoverRequest) => {
+            if (deps.becknVersion === '1.0') {
+                return Promise.reject(new Error('Discover flow is not available for Beckn v1.'));
+            }
+            const adapter = getAdapters();
+            if ('createDiscoverCatalog' in adapter && adapter.createDiscoverCatalog) {
+                return adapter.createDiscoverCatalog(request);
+            }
+            return Promise.reject(new Error('Discover catalog not available'));
+        },
+
+        createOnInitResponse: (request: InitReqBody | BecknV2InitRequest): Promise<OnInitReqBody | BecknV2OnInitResponse> => {
+            if (deps.becknVersion === '1.0') {
+                return getAdapters().createOnInitResponse(request as any) as Promise<OnInitReqBody>;
+            } else {
+                return getAdapters().createOnInitResponse(request as any) as Promise<BecknV2OnInitResponse>;
+            }
+        },
+
+        createOnSelectResponse: (request: SelectRequest | BecknV2SelectRequest): Promise<OnSelectResponse | BecknV2OnSelectResponse> => {
+            if (deps.becknVersion === '1.0') {
+                return getAdapters().createOnSelectResponse(request as any) as Promise<OnSelectResponse>;
+            } else {
+                return getAdapters().createOnSelectResponse(request as any) as Promise<BecknV2OnSelectResponse>;
+            }
+        }
+    };
 };
-
-const adaptersByVersion: Record<'1.0' | '2.0', BecknAdapters> = {
-    '1.0': {
-        createCatalogFromIntent: (request: unknown) =>
-            becknV1.createCatalogFromIntent(request as SearchReqBody),
-        createOnInitResponse: (request: unknown) =>
-            becknV1.createOnInitResponse(request as InitReqBody),
-        createOnSelectResponse: (request: unknown) =>
-            becknV1.createOnSelectResponse(request as SelectRequest)
-    },
-    '2.0': {
-        createCatalogFromIntent: becknV2.createCatalogFromIntent,
-        createDiscoverCatalog: becknV2.createDiscoverCatalog,
-        createOnInitResponse: (request: unknown) =>
-            becknV2.createOnInitResponse(request as BecknV2InitRequest),
-        createOnSelectResponse: (request: unknown) =>
-            becknV2.createOnSelectResponse(request as BecknV2SelectRequest)
-    }
-};
-
-const getAdapters = (): BecknAdapters => adaptersByVersion[appConfig.beckn.version];
-
-export const createCatalogFromIntent = (request: SearchReqBody) =>
-    getAdapters().createCatalogFromIntent(request) as Promise<OnSearchResponse | null>;
-
-export const createDiscoverCatalog = (request: BecknV2DiscoverRequest) => {
-    const adapters = getAdapters();
-    if (!adapters.createDiscoverCatalog) {
-        return Promise.reject(
-            new Error('Discover flow is not available for Beckn v1.')
-        );
-    }
-    return adapters.createDiscoverCatalog(request);
-};
-
-export const createOnInitResponse = (request: InitReqBody | BecknV2InitRequest) =>
-    getAdapters().createOnInitResponse(request) as Promise<OnInitReqBody | BecknV2OnInitResponse>;
-
-export const createOnSelectResponse = (request: SelectRequest | BecknV2SelectRequest) =>
-    getAdapters().createOnSelectResponse(request) as Promise<OnSelectResponse | BecknV2OnSelectResponse>;

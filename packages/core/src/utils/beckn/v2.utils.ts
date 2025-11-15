@@ -3,15 +3,9 @@ import path from 'path';
 import yaml from 'js-yaml';
 import type { z } from 'zod';
 
-import { appConfig } from '../../config/app.config';
-import {
-    getOcpiSnapshot,
-    getItemById,
-    getActiveTariffWithComponents,
-    type ActiveTariff
-} from '../db.utils';
 import type { LocationData } from '../../models/location.model';
 import type { CachedItem, CachedTariff } from '../../cache/ocpiCache';
+import type { ActiveTariff } from '../db.utils';
 import {
     BecknV2DiscoverRequestSchema,
     BecknV2DiscoverResponseSchema,
@@ -27,7 +21,47 @@ import {
     type BecknV2OnInitResponse
 } from '../../types/becknV2';
 import type { InitReqBody, SelectRequest } from '../../types/beckn';
-import { checkEVSEStatus } from '../ocpi.utils';
+
+// These will be injected via factory function (similar to v1.utils)
+let injectedDBUtils: ReturnType<typeof import('../db.utils').createDBUtils> | null = null;
+let injectedOCPIUtils: { checkEVSEStatus: (locationId: string, evseUid: string, context?: any) => Promise<any> } | null = null;
+let injectedConfig: {
+    beckn: { bpp_id: string; bpp_uri: string; protocol_server_url: string };
+} | null = null;
+
+export const setV2UtilsDependencies = (deps: {
+    dbUtils: ReturnType<typeof import('../db.utils').createDBUtils>;
+    ocpiUtils: { checkEVSEStatus: (locationId: string, evseUid: string, context?: any) => Promise<any> };
+    config: {
+        beckn: { bpp_id: string; bpp_uri: string; protocol_server_url: string };
+    };
+}) => {
+    injectedDBUtils = deps.dbUtils;
+    injectedOCPIUtils = deps.ocpiUtils;
+    injectedConfig = deps.config;
+};
+
+const getDBUtils = () => {
+    if (!injectedDBUtils) throw new Error('V2 utils dependencies not set. Call setV2UtilsDependencies first.');
+    return injectedDBUtils;
+};
+
+const getOCPIUtils = () => {
+    if (!injectedOCPIUtils) throw new Error('V2 utils dependencies not set. Call setV2UtilsDependencies first.');
+    return injectedOCPIUtils;
+};
+
+const appConfig = new Proxy({} as any, {
+    get: (_target, prop) => {
+        if (!injectedConfig) throw new Error('V2 utils config not set. Call setV2UtilsDependencies first.');
+        return (injectedConfig as any)[prop];
+    }
+});
+
+const getOcpiSnapshot = () => getDBUtils().getOcpiSnapshot();
+const getItemById = (id: string | number) => getDBUtils().getItemById(id);
+const getActiveTariffWithComponents = (id: string) => getDBUtils().getActiveTariffWithComponents(id);
+const checkEVSEStatus = (locationId: string, evseUid: string, context?: any) => getOCPIUtils().checkEVSEStatus(locationId, evseUid, context);
 
 const CORE_CONTEXT =
     'https://raw.githubusercontent.com/beckn/protocol-specifications-new/refs/heads/draft/schema/core/v2/context.jsonld' as const;

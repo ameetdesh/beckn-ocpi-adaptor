@@ -1,5 +1,5 @@
 import { Request, Response, Router } from 'express';
-import type { InitReqBody, OnInitReqBody } from '../types/beckn';
+import type { InitReqBody, OnInitReqBody } from '@beckn/ocpi-adaptor-core';
 import { createOnInitResponse } from '../utils/common.utils';
 import { createRouteHandler } from '../utils/routeHandlers.utils';
 

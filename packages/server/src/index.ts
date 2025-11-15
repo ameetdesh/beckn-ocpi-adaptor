@@ -1,12 +1,6 @@
 import express, { type Express, type Request, type Response, type NextFunction } from 'express';
 import cors from 'cors';
 
-// Export route handlers
-export { createRouteHandler } from './utils/routeHandlers.utils';
-
-// Export routes
-export { default as routes } from './routes';
-
 export interface ServerConfig {
     port: number;
     enableCors?: boolean;

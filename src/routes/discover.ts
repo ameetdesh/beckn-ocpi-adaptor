@@ -2,7 +2,7 @@ import { Request, Response, Router } from 'express';
 import { appConfig } from '../config/app.config';
 import { createRouteHandler } from '../utils/routeHandlers.utils';
 import { createDiscoverCatalog } from '../utils/common.utils';
-import type { BecknV2DiscoverRequest } from '../types/becknV2';
+import type { BecknV2DiscoverRequest } from '@beckn/ocpi-adaptor-core';
 
 const router = Router();
 const { sendAck, sendToProtocolServer, handleError } = createRouteHandler({

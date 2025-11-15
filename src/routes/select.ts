@@ -1,5 +1,5 @@
 import { Request, Response, Router } from 'express';
-import type { SelectRequest } from '../types/beckn';
+import type { SelectRequest } from '@beckn/ocpi-adaptor-core';
 import { createOnSelectResponse } from '../utils/common.utils';
 import { createRouteHandler } from '../utils/routeHandlers.utils';
 

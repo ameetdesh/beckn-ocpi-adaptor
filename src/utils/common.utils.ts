@@ -1,66 +1,84 @@
-import type {
-    OnSearchResponse,
-    SearchReqBody,
-    InitReqBody,
-    OnInitReqBody,
-    SelectRequest,
-    OnSelectResponse
-} from '../types/beckn';
+/**
+ * Legacy wrapper - re-exports transformations from core package
+ * This maintains backward compatibility while using the new factory-based approach
+ */
+
+import { createTransformationsFactory } from '@beckn/ocpi-adaptor-core';
 import { appConfig } from '../config/app.config';
-import * as becknV1 from './beckn/v1.utils';
-import * as becknV2 from './beckn/v2.utils';
-import type {
-    BecknV2DiscoverRequest,
-    BecknV2DiscoverResponse,
-    BecknV2InitRequest,
-    BecknV2OnInitResponse,
-    BecknV2OnSelectResponse,
-    BecknV2SelectRequest
-} from '../types/becknV2';
+import { createDBUtils } from '@beckn/ocpi-adaptor-core';
+import { createOCPIUtils } from '@beckn/ocpi-adaptor-core';
+import { createOCPICache } from '@beckn/ocpi-adaptor-core';
 
-type BecknAdapters = {
-    createCatalogFromIntent: (request: unknown) => Promise<unknown>;
-    createDiscoverCatalog?: (request: BecknV2DiscoverRequest) => Promise<BecknV2DiscoverResponse | null>;
-    createOnInitResponse: (request: unknown) => Promise<unknown>;
-    createOnSelectResponse: (request: unknown) => Promise<unknown>;
+// This will be initialized in src/index.ts
+let transformationsInstance: ReturnType<typeof createTransformationsFactory> | null = null;
+
+export const initializeTransformations = async (deps: {
+    ocpiCache: ReturnType<typeof createOCPICache> | null;
+    ocpiUtils: ReturnType<typeof createOCPIUtils>;
+}) => {
+    // Create DB utils
+    const dbUtils = createDBUtils({
+        ocpiCache: deps.ocpiCache || {
+            getSnapshot: async () => null
+        },
+        ocpiUtils: {
+            buildOCPIDataSnapshot: deps.ocpiUtils.buildOCPIDataSnapshot,
+            refreshOCPIcache: deps.ocpiUtils.refreshOCPIcache
+        },
+        useCache: appConfig.app.initialization.use_cache
+    });
+
+    // Create transformations factory
+    transformationsInstance = createTransformationsFactory({
+        becknVersion: appConfig.beckn.version,
+        dbUtils,
+        ocpiUtils: {
+            checkEVSEStatus: deps.ocpiUtils.checkEVSEStatus
+        },
+        config: {
+            app: {
+                discovery: {
+                    default_radius_meters: appConfig.app.discovery.default_radius_meters,
+                    share_location_details: appConfig.app.discovery.share_location_details
+                },
+                defaults: {
+                    item_name: appConfig.app.defaults.item_name
+                }
+            },
+            beckn: {
+                bpp_id: appConfig.beckn.bpp_id,
+                bpp_uri: appConfig.beckn.bpp_uri,
+                protocol_server_url: appConfig.beckn.protocol_server_url
+            }
+        }
+    });
 };
 
-const adaptersByVersion: Record<'1.0' | '2.0', BecknAdapters> = {
-    '1.0': {
-        createCatalogFromIntent: (request: unknown) =>
-            becknV1.createCatalogFromIntent(request as SearchReqBody),
-        createOnInitResponse: (request: unknown) =>
-            becknV1.createOnInitResponse(request as InitReqBody),
-        createOnSelectResponse: (request: unknown) =>
-            becknV1.createOnSelectResponse(request as SelectRequest)
-    },
-    '2.0': {
-        createCatalogFromIntent: becknV2.createCatalogFromIntent,
-        createDiscoverCatalog: becknV2.createDiscoverCatalog,
-        createOnInitResponse: (request: unknown) =>
-            becknV2.createOnInitResponse(request as BecknV2InitRequest),
-        createOnSelectResponse: (request: unknown) =>
-            becknV2.createOnSelectResponse(request as BecknV2SelectRequest)
+// Legacy exports for backward compatibility
+export const createCatalogFromIntent = async (request: any) => {
+    if (!transformationsInstance) {
+        throw new Error('Transformations not initialized. Call initializeTransformations first.');
     }
+    return transformationsInstance.createCatalogFromIntent(request);
 };
 
-const getAdapters = (): BecknAdapters => adaptersByVersion[appConfig.beckn.version];
-
-export const createCatalogFromIntent = (request: SearchReqBody) =>
-    getAdapters().createCatalogFromIntent(request) as Promise<OnSearchResponse | null>;
-
-export const createDiscoverCatalog = (request: BecknV2DiscoverRequest) => {
-    const adapters = getAdapters();
-    if (!adapters.createDiscoverCatalog) {
-        return Promise.reject(
-            new Error('Discover flow is not available for Beckn v1.')
-        );
+export const createDiscoverCatalog = async (request: any) => {
+    if (!transformationsInstance) {
+        throw new Error('Transformations not initialized. Call initializeTransformations first.');
     }
-    return adapters.createDiscoverCatalog(request);
+    return transformationsInstance.createDiscoverCatalog(request);
 };
 
-export const createOnInitResponse = (request: InitReqBody | BecknV2InitRequest) =>
-    getAdapters().createOnInitResponse(request) as Promise<OnInitReqBody | BecknV2OnInitResponse>;
+export const createOnInitResponse = async (request: any) => {
+    if (!transformationsInstance) {
+        throw new Error('Transformations not initialized. Call initializeTransformations first.');
+    }
+    return transformationsInstance.createOnInitResponse(request);
+};
 
-export const createOnSelectResponse = (request: SelectRequest | BecknV2SelectRequest) =>
-    getAdapters().createOnSelectResponse(request) as Promise<OnSelectResponse | BecknV2OnSelectResponse>;
+export const createOnSelectResponse = async (request: any) => {
+    if (!transformationsInstance) {
+        throw new Error('Transformations not initialized. Call initializeTransformations first.');
+    }
+    return transformationsInstance.createOnSelectResponse(request);
+};

@@ -1,15 +1,18 @@
 import { z } from 'zod';
 
+// Note: OCPI types depend on submodule at root level
+// These imports will be fixed when submodule handling is resolved
+// For now, using generated types from within core package
 import {
     Location as OcpiLocationSchema,
     Locations as OcpiLocationsSchema,
     Evse as OcpiEvseSchema,
     Connector as OcpiConnectorSchema,
-} from '../../specs/ocpi-schema/ocpi.location.v221';
+} from './generated/ocpi-schema/ocpi.location.v221';
 import {
     Tariff as OcpiTariffSchema,
     Tariffs as OcpiTariffsSchema,
-} from '../../specs/ocpi-schema/ocpi.tariff.v221';
+} from './generated/ocpi-schema/ocpi.tariff.v221';
 
 export const OCPILocationSchema = OcpiLocationSchema;
 export const OCPILocationsSchema = OcpiLocationsSchema;

@@ -5,8 +5,7 @@
  * with the core SDK package.
  */
 
-import { createOCPICache, createLogService } from '@beckn/ocpi-adaptor-core';
-import { createOCPIUtils } from '../../utils/ocpi.utils';
+import { createOCPICache, createLogService, createOCPIUtils } from '@beckn/ocpi-adaptor-core';
 // Note: These packages are available but need to be installed/linked properly
 // import { createRedisCacheStore } from '@beckn/cache-redis';
 // import { createClickHouseLogStore } from '@beckn/log-clickhouse';

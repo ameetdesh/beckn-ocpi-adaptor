@@ -18,7 +18,8 @@
     "node_modules",
     "dist",
     "**/*.test.ts",
-    "src/types/generated/**/*"
+    "src/types/generated/**/*",
+    "src/types/ocpi.ts"
   ]
 }
 

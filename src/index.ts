@@ -1,8 +1,10 @@
-import { createServer, startServer, routes } from '@beckn/server';
+import { createServer, startServer } from '@beckn/server';
 import { createOCPICache, createLogService, createOCPIUtils, type OCPIDataSnapshot } from '@beckn/ocpi-adaptor-core';
 import { createRedisCacheStore } from '@beckn/cache-redis';
 import { createClickHouseLogStore } from '@beckn/log-clickhouse';
 import { appConfig } from './config/app.config';
+import routes from './routes';
+import { initializeTransformations } from './utils/common.utils';
 
 async function main() {
     const { refresh_ocpi_cache_on_startup } = appConfig.app.initialization;
@@ -61,6 +63,13 @@ async function main() {
         cache: ocpiCache ? { setSnapshot: ocpiCache.setSnapshot } : undefined,
         logger: logService ? { insertLog: logService.insertLog } : undefined
     });
+
+    // Initialize transformations (must be done before routes use them)
+    await initializeTransformations({
+        ocpiCache,
+        ocpiUtils
+    });
+    console.log(`[${new Date().toISOString()}] Transformations initialized`);
 
     if (refresh_ocpi_cache_on_startup) {
         await ocpiUtils.refreshOCPIcache();

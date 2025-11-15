@@ -1,5 +1,5 @@
 import { Request, Response, Router } from 'express';
-import type { OnSearchResponse, SearchReqBody } from '../types/beckn';
+import type { OnSearchResponse, SearchReqBody } from '@beckn/ocpi-adaptor-core';
 import { createCatalogFromIntent } from '../utils/common.utils';
 import { createRouteHandler } from '../utils/routeHandlers.utils';
 import { appConfig } from '../config/app.config';

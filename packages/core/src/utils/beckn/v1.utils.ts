@@ -1,20 +1,62 @@
-import type { OnSearchResponse, SelectRequest, Context, Item, OnSelectResponse } from '../../types/beckn';
-import type { SearchReqBody, InitReqBody, OnInitReqBody } from '../../types/beckn';
-import { locationWithRadiusSchema, Quote, Fulfillment } from '../../types/beckn';
-import {
-    getActiveTariffWithComponents,
-    getOcpiSnapshot,
-    getItemById,
-    getLocationById,
-    type ActiveTariff
-} from '../db.utils';
+import type { OnSearchResponse, SelectRequest, Context, Item, OnSelectResponse, SearchReqBody, InitReqBody, OnInitReqBody, Quote, Fulfillment } from '../../types/beckn';
+import { locationWithRadiusSchema } from '../../types/beckn';
 import { error_messages } from '../error_codes';
 import { item_mapping } from '../../models/mappings/item.jsonata';
 import { fulfillment_mapping } from '../../models/mappings/fulfillment.jsonata';
-import { checkEVSEStatus } from '../ocpi.utils';
-import { appConfig } from '../../config/app.config';
 import { provider_mapping } from '../../models/mappings/provider.jsonata';
 import type { CachedItem } from '../../cache/ocpiCache';
+import type { ActiveTariff } from '../db.utils';
+
+// These will be injected via factory function
+// For now, we'll use a global config object that gets set by the factory
+let injectedDBUtils: ReturnType<typeof import('../db.utils').createDBUtils> | null = null;
+let injectedOCPIUtils: { checkEVSEStatus: (locationId: string, evseUid: string, context?: any) => Promise<any> } | null = null;
+let injectedConfig: {
+    app: {
+        discovery: { default_radius_meters: number; share_location_details: boolean };
+        defaults: { item_name: string };
+    };
+    beckn: { bpp_id: string; bpp_uri: string; protocol_server_url: string };
+} | null = null;
+
+export const setV1UtilsDependencies = (deps: {
+    dbUtils: ReturnType<typeof import('../db.utils').createDBUtils>;
+    ocpiUtils: { checkEVSEStatus: (locationId: string, evseUid: string, context?: any) => Promise<any> };
+    config: {
+        app: {
+            discovery: { default_radius_meters: number; share_location_details: boolean };
+            defaults: { item_name: string };
+        };
+        beckn: { bpp_id: string; bpp_uri: string; protocol_server_url: string };
+    };
+}) => {
+    injectedDBUtils = deps.dbUtils;
+    injectedOCPIUtils = deps.ocpiUtils;
+    injectedConfig = deps.config;
+};
+
+const getDBUtils = () => {
+    if (!injectedDBUtils) throw new Error('V1 utils dependencies not set. Call setV1UtilsDependencies first.');
+    return injectedDBUtils;
+};
+
+const getOCPIUtils = () => {
+    if (!injectedOCPIUtils) throw new Error('V1 utils dependencies not set. Call setV1UtilsDependencies first.');
+    return injectedOCPIUtils;
+};
+
+const appConfig = new Proxy({} as any, {
+    get: (_target, prop) => {
+        if (!injectedConfig) throw new Error('V1 utils config not set. Call setV1UtilsDependencies first.');
+        return (injectedConfig as any)[prop];
+    }
+});
+
+const getOcpiSnapshot = () => getDBUtils().getOcpiSnapshot();
+const getItemById = (id: string | number) => getDBUtils().getItemById(id);
+const getLocationById = (id: string) => getDBUtils().getLocationById(id);
+const getActiveTariffWithComponents = (id: string) => getDBUtils().getActiveTariffWithComponents(id);
+const checkEVSEStatus = (locationId: string, evseUid: string, context?: any) => getOCPIUtils().checkEVSEStatus(locationId, evseUid, context);
 
 
 //function to find distance between 2 gps coordinates using haversine formula
