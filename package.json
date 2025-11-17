@@ -4,16 +4,16 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "dev": "ts-node -r dotenv/config src/examples/using-server-package.example.ts",
+    "dev": "ts-node -r dotenv/config src/index.ts",
     "start": "node build/src/index.js",
     "test": "echo \"Error: no test specified\" && exit 1",
     "build": "tsc && chmod 755 build/src/index.js",
-    "discovery": "node -r dotenv/config build/services/discovery.js",
     "test:packages": "npm run test:core && npm run test:cache-redis && npm run test:log-clickhouse && npm run test:server",
     "test:core": "cd packages/core && npm run test:example",
     "test:cache-redis": "cd packages/cache-redis && npm run test:example",
     "test:log-clickhouse": "cd packages/log-clickhouse && npm run test:example",
     "test:server": "cd packages/server && npm run test:example",
+
     "generate:zod:v1": "node -e \"require('fs').mkdirSync('packages/core/src/types/generated/beckn-v1', { recursive: true });\" && openapi-to-zod -i ref_docs/specs_yaml/simple-energy_EV_1.1.0_openapi_3.1.yaml -o packages/core/src/types/generated/beckn-v1 --fileExt ts",
     "generate:zod:v2": "node -e \"require('fs').mkdirSync('packages/core/src/types/generated/beckn-v2/core', { recursive: true });\" && openapi-to-zod -i specs/beckn-schema/protocol_specifications_new/api-specs/beckn-protocol-api.yaml -o packages/core/src/types/generated/beckn-v2/core --fileExt ts",
     "generate:zod:v2:core-schemas": "node -e \"require('fs').mkdirSync('packages/core/src/types/generated/beckn-v2/core-schemas', { recursive: true });\" && openapi-to-zod -i specs/beckn-schema/protocol_specifications_new/schema/core/v2/core.yaml -o packages/core/src/types/generated/beckn-v2/core-schemas --fileExt ts",
@@ -22,9 +22,15 @@
     "generate:zod:attr:charging-offer": "node -e \"require('fs').mkdirSync('packages/core/src/types/generated/beckn-v2/charging-offer', { recursive: true });\" && openapi-to-zod -i specs/beckn-schema/protocol_specifications_new/schema/EvChargingOffer/v1/attributes.yaml -o packages/core/src/types/generated/beckn-v2/charging-offer --fileExt ts",
     "generate:zod:attr:cpo": "node -e \"require('fs').mkdirSync('packages/core/src/types/generated/beckn-v2/charging-point-operator', { recursive: true });\" && openapi-to-zod -i specs/beckn-schema/protocol_specifications_new/schema/EvChargingPointOperator/v1/attributes.yaml -o packages/core/src/types/generated/beckn-v2/charging-point-operator --fileExt ts",
     "generate:zod:attributes": "npm run generate:zod:attr:charging-service && npm run generate:zod:attr:charging-session && npm run generate:zod:attr:charging-offer && npm run generate:zod:attr:cpo",
-    "generate:zod": "npm run generate:zod:v1 && npm run generate:zod:v2 && npm run generate:zod:v2:core-schemas && npm run generate:zod:attributes"
+    "generate:zod": "npm run generate:zod:v1 && npm run generate:zod:v2 && npm run generate:zod:v2:core-schemas && npm run generate:zod:attributes",
+
+    "publish:core": "cd packages/core && npm run build && npm publish --access public",
+    "publish:cache-redis": "cd packages/cache-redis && npm run build && npm publish --access public",
+    "publish:log-clickhouse": "cd packages/log-clickhouse && npm run build && npm publish --access public",
+    "publish:server": "cd packages/server && npm run build && npm publish --access public",
+    "publish:all": "npm run publish:core && npm run publish:cache-redis && npm run publish:log-clickhouse && npm run publish:server"
   },
-  "author": "Nirmal N R & Ameet Deshpande",
+  "author": "made with ❤️ by Beckn Labs & the community",
   "license": "MIT",
   "dependencies": {
     "@beckn/cache-redis": "file:./packages/cache-redis",

@@ -65,11 +65,23 @@ async function main() {
     });
 
     // Initialize transformations (must be done before routes use them)
-    await initializeTransformations({
-        ocpiCache,
-        ocpiUtils
-    });
-    console.log(`[${new Date().toISOString()}] Transformations initialized`);
+    try {
+        await initializeTransformations({
+            ocpiCache,
+            ocpiUtils
+        });
+        
+        // Verify initialization completed
+        const { isTransformationsInitialized } = await import('./utils/common.utils');
+        if (!isTransformationsInitialized()) {
+            throw new Error('Transformations initialization completed but instance is null');
+        }
+        
+        console.log(`[${new Date().toISOString()}] Transformations initialized successfully`);
+    } catch (error) {
+        console.error(`[${new Date().toISOString()}] Failed to initialize transformations:`, error);
+        process.exit(1); // Exit if transformations fail to initialize
+    }
 
     if (refresh_ocpi_cache_on_startup) {
         await ocpiUtils.refreshOCPIcache();

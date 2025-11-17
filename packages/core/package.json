@@ -20,7 +20,7 @@
     "ev-charging",
     "sdk"
   ],
-  "author": "Nirmal N R & Ameet Deshpande",
+  "author": "made with ❤️ by Beckn Labs & the community",
   "license": "MIT",
   "dependencies": {
     "jsonata": "^2.1.0",

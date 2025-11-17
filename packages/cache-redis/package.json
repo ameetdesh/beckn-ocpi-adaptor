@@ -20,17 +20,13 @@
     "redis",
     "cache"
   ],
-  "author": "Nirmal N R & Ameet Deshpande",
+  "author": "made with ❤️ by Beckn Labs & the community",
   "license": "MIT",
   "dependencies": {
     "redis": "^4.7.1"
   },
   "peerDependencies": {
     "@beckn/ocpi-adaptor-core": "*"
-  },
-  "devDependencies": {
-    "@types/node": "^24.3.0",
-    "typescript": "^5.9.2"
   }
 }
 
