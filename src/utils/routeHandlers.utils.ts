@@ -1,13 +1,15 @@
 import { v4 as uuidv4 } from 'uuid';
-import { insertLog } from '../logging/log.service';
 import { appConfig } from '../config/app.config';
 import { Request, Response } from 'express';
 import axios from 'axios';
+import type { createLogService } from '@beckn/ocpi-adaptor-core';
 
 interface RouteHandlerConfig {
     action: string;
     stage: string;
 }
+
+type LogServiceType = ReturnType<typeof createLogService> | null;
 
 const sanitizePayload = (payload: unknown, maxPreviewLength = 8000) => {
     try {
@@ -27,7 +29,7 @@ const sanitizePayload = (payload: unknown, maxPreviewLength = 8000) => {
     }
 };
 
-export const createRouteHandler = (config: RouteHandlerConfig) => {
+export const createRouteHandler = (config: RouteHandlerConfig, logService: LogServiceType) => {
     const { action, stage } = config;
 
     const sendAck = (req: Request, res: Response, context: any) => {
@@ -35,7 +37,8 @@ export const createRouteHandler = (config: RouteHandlerConfig) => {
 
         res.json(ack_response);
 
-        insertLog({
+        if (logService) {
+            logService.insertLog({
             id: uuidv4(),
             transaction_id: context.transaction_id!,
             message_id: context.message_id!,
@@ -49,9 +52,10 @@ export const createRouteHandler = (config: RouteHandlerConfig) => {
             status_code: 200,
             request_data: req.body,
             response_data: ack_response
-        }).catch(err => {
-            console.error(`[${new Date().toISOString()}] Failed to write ack log`, err);
-        });
+            }).catch(err => {
+                console.error(`[${new Date().toISOString()}] Failed to write ack log`, err);
+            });
+        }
     };
 
     const sendToProtocolServer = async (data: any, context: any, is_error: boolean = false) => {
@@ -94,8 +98,9 @@ export const createRouteHandler = (config: RouteHandlerConfig) => {
             }
         );
 
-        try {
-            await insertLog({
+        if (logService) {
+            try {
+                await logService.insertLog({
                 id: uuidv4(),
                 transaction_id: context.transaction_id ?? '',
                 message_id: context.message_id ?? '',
@@ -110,9 +115,10 @@ export const createRouteHandler = (config: RouteHandlerConfig) => {
                 request_data: sanitizedRequest,
                 response_data: sanitizedResponse,
                 error_message: transportError?.message
-            });
-        } catch (error) {
-            console.error(`[${new Date().toISOString()}] Failed to write protocol response log`, error);
+                });
+            } catch (error) {
+                console.error(`[${new Date().toISOString()}] Failed to write protocol response log`, error);
+            }
         }
 
         return {

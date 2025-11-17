@@ -1,9 +1,12 @@
 import { Router } from 'express';
-import { fetchLogs } from '../logging/log.service';
+import type { createLogService } from '@beckn/ocpi-adaptor-core';
 
-const router = Router();
+type LogServiceType = ReturnType<typeof createLogService> | null;
 
-router.get('/', async (req, res) => {
+export const createLogsRouter = (logService: LogServiceType) => {
+    const router = Router();
+
+    router.get('/', async (req, res) => {
     try {
         console.log(`[${new Date().toISOString()}] All Logs Request:`, req.query);
 
@@ -22,7 +25,16 @@ router.get('/', async (req, res) => {
 
         const limitNumber = limit ? Number(limit) : undefined;
 
-        const result = await fetchLogs({
+        if (!logService) {
+            res.json({
+                status: 'success',
+                count: 0,
+                data: []
+            });
+            return;
+        }
+
+        const result = await logService.fetchLogs({
             transaction_id: transaction_id as string | undefined,
             message_id: message_id as string | undefined,
             bap_id: bap_id as string | undefined,
@@ -48,6 +60,7 @@ router.get('/', async (req, res) => {
             error: error instanceof Error ? error.message : 'Unknown error'
         });
     }
-});
+    });
 
-export default router;
+    return router;
+};

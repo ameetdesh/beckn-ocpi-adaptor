@@ -1,24 +1,31 @@
 import { Router } from 'express';
-import searchRouter from './search';
-import discoverRouter from './discover';
-import selectRouter from './select';
-import initRouter from './init';
-import autoRouter from './auto';
-import logsRouter from './logs';
+import { createSearchRouter } from './search';
+import { createDiscoverRouter } from './discover';
+import { createSelectRouter } from './select';
+import { createInitRouter } from './init';
+import { createAutoRouter } from './auto';
+import { createLogsRouter } from './logs';
+import type { createLogService } from '@beckn/ocpi-adaptor-core';
 
-const router = Router();
+type LogServiceType = ReturnType<typeof createLogService> | null;
 
-// API routes
-router.use('/search', searchRouter);
-router.use('/discover', discoverRouter);
-router.use('/select', selectRouter);
-router.use('/init', initRouter);
-router.use('/auto', autoRouter);
-router.use('/beckn-logs', logsRouter);
+export const createRoutes = (logService: LogServiceType) => {
+    const router = Router();
 
-// Health check endpoint
-router.get('/health', (_req, res) => {
-    res.status(200).json({ status: 'ok' });
-});
+    // API routes
+    router.use('/search', createSearchRouter(logService));
+    router.use('/discover', createDiscoverRouter(logService));
+    router.use('/select', createSelectRouter(logService));
+    router.use('/init', createInitRouter(logService));
+    router.use('/auto', createAutoRouter(logService));
+    router.use('/beckn-logs', createLogsRouter(logService));
 
-export default router;
+    // Health check endpoint
+    router.get('/health', (_req, res) => {
+        res.status(200).json({ status: 'ok' });
+    });
+
+    return router;
+};
+
+export default createRoutes;

@@ -9,7 +9,7 @@ import { createServer, startServer } from '@beckn/server';
 import { createOCPICache, createLogService, createOCPIUtils, type OCPIDataSnapshot } from '@beckn/ocpi-adaptor-core';
 import { createRedisCacheStore } from '@beckn/cache-redis';
 import { createClickHouseLogStore } from '@beckn/log-clickhouse';
-import routes from '../routes';
+import { createRoutes } from '../routes';
 
 // Example: Setting up server with all dependencies
 export async function exampleWithServerPackage() {
@@ -51,6 +51,9 @@ export async function exampleWithServerPackage() {
     if (process.env.REFRESH_CACHE_ON_STARTUP === 'true') {
         await ocpiUtils.refreshOCPIcache();
     }
+
+    // Create routes with logService
+    const routes = createRoutes(logService);
 
     // Create server
     const app = createServer(

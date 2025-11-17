@@ -1,4 +1,4 @@
-import type { LogData } from '../models/log.model';
+import type { LogData } from '@beckn/ocpi-adaptor-core';
 
 export type LogQueryParams = {
     transaction_id?: string;

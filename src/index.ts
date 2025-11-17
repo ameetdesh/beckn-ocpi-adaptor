@@ -3,7 +3,7 @@ import { createOCPICache, createLogService, createOCPIUtils, type OCPIDataSnapsh
 import { createRedisCacheStore } from '@beckn/cache-redis';
 import { createClickHouseLogStore } from '@beckn/log-clickhouse';
 import { appConfig } from './config/app.config';
-import routes from './routes';
+import { createRoutes } from './routes';
 import { initializeTransformations } from './utils/common.utils';
 
 async function main() {
@@ -82,6 +82,9 @@ async function main() {
     if (!appConfig.app.initialization.use_cache) {
         console.log(`[${new Date().toISOString()}] OCPI cache usage is disabled via configuration`);
     }
+
+    // Create routes with logService
+    const routes = createRoutes(logService);
 
     // Create server
     const app = createServer(
