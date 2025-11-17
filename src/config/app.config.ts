@@ -76,6 +76,7 @@ const validateConfig = (config: AppConfig) => {
     }
 
     if ((config as any).beckn?.version === undefined) {
+        console.warn('[appConfig] beckn.version missing in config. Falling back to 1.0');
         (config as any).beckn.version = '1.0';
     }
 
@@ -283,6 +284,8 @@ const loadConfig = (): AppConfig => {
     })
 
     const yamlPath = path.join('./', values.config);
+    const resolvedYamlPath = path.resolve(yamlPath);
+    console.log(`[appConfig] Loading configuration file from ${resolvedYamlPath}`);
     let fileContents: string;
 
     try {
@@ -308,6 +311,8 @@ const loadConfig = (): AppConfig => {
 
     // Parse the resolved YAML string into a JavaScript object
     const config = yaml.load(resolvedYaml) as AppConfig;
+
+    console.log(`[appConfig] Raw beckn.version value read from YAML: ${config?.beckn?.version ?? '(undefined)'}`);
 
     const envCacheStore = process.env.CACHE_STORE?.trim();
     if (envCacheStore) {
@@ -374,6 +379,8 @@ const loadConfig = (): AppConfig => {
     if (config.ocpi.url) validateUrl(config.ocpi.url, 'ocpi.url');
     if (config.beckn.bpp_uri) validateUrl(config.beckn.bpp_uri, 'beckn.bpp_uri');
     if (config.beckn.protocol_server_url) validateUrl(config.beckn.protocol_server_url, 'beckn.protocol_server_url');
+
+    console.log(`[appConfig] Final validated beckn.version=${config.beckn.version}`);
     return config;
 };
 
