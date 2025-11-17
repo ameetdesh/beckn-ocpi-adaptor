@@ -4,9 +4,9 @@ import type { createLogService } from '@beckn/ocpi-adaptor-core';
 type LogServiceType = ReturnType<typeof createLogService> | null;
 
 export const createLogsRouter = (logService: LogServiceType) => {
-    const router = Router();
+const router = Router();
 
-    router.get('/', async (req, res) => {
+router.get('/', async (req, res) => {
     try {
         console.log(`[${new Date().toISOString()}] All Logs Request:`, req.query);
 
@@ -60,7 +60,7 @@ export const createLogsRouter = (logService: LogServiceType) => {
             error: error instanceof Error ? error.message : 'Unknown error'
         });
     }
-    });
+});
 
     return router;
 };

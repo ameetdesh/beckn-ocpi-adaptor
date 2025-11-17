@@ -5,3 +5,7 @@
 [submodule "specs/ocpi-schema"]
 	path = specs/ocpi-schema
 	url = https://github.com/solidstudiosh/ocpi-schema.git
+[submodule "specs/beckn-schema/beckn-v1"]
+	path = specs/beckn-schema/beckn-v1
+	url = https://github.com/beckn/protocol-specifications-new
+	branch = main

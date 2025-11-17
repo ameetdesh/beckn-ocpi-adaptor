@@ -52,9 +52,9 @@ export const createRouteHandler = (config: RouteHandlerConfig, logService: LogSe
             status_code: 200,
             request_data: req.body,
             response_data: ack_response
-            }).catch(err => {
-                console.error(`[${new Date().toISOString()}] Failed to write ack log`, err);
-            });
+        }).catch(err => {
+            console.error(`[${new Date().toISOString()}] Failed to write ack log`, err);
+        });
         }
     };
 
@@ -99,7 +99,7 @@ export const createRouteHandler = (config: RouteHandlerConfig, logService: LogSe
         );
 
         if (logService) {
-            try {
+        try {
                 await logService.insertLog({
                 id: uuidv4(),
                 transaction_id: context.transaction_id ?? '',
@@ -115,9 +115,9 @@ export const createRouteHandler = (config: RouteHandlerConfig, logService: LogSe
                 request_data: sanitizedRequest,
                 response_data: sanitizedResponse,
                 error_message: transportError?.message
-                });
-            } catch (error) {
-                console.error(`[${new Date().toISOString()}] Failed to write protocol response log`, error);
+            });
+        } catch (error) {
+            console.error(`[${new Date().toISOString()}] Failed to write protocol response log`, error);
             }
         }
 

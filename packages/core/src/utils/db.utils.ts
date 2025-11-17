@@ -9,9 +9,9 @@ export interface DBUtilsDependencies {
     ocpiUtils: {
         buildOCPIDataSnapshot: () => Promise<OCPIDataSnapshot>;
         refreshOCPIcache: () => Promise<OCPIDataSnapshot>;
-    };
+};
     useCache: boolean;
-}
+    }
 
 export type ActiveTariff = {
     id: string;
@@ -69,23 +69,23 @@ export const createDBUtils = (deps: DBUtilsDependencies) => {
         },
 
         getActiveTariffWithComponents: async (id: string): Promise<ActiveTariff | null> => {
-            const snapshot = await loadSnapshot();
-            const tariff = snapshot.tariffs.find(current => current.id === id);
-            if (!tariff) return null;
+    const snapshot = await loadSnapshot();
+    const tariff = snapshot.tariffs.find(current => current.id === id);
+    if (!tariff) return null;
 
-            return {
-                id: tariff.id,
-                start_date_time: tariff.start_date_time,
-                end_date_time: tariff.end_date_time,
-                currency: tariff.currency,
-                country_code: tariff.country_code,
-                price_components: tariff.price_components.map((component, index) => ({
-                    id: `${tariff.id}-${index}`,
-                    price: component.price,
-                    type: component.type,
-                    vat: component.vat ?? null,
-                    step_size: component.step_size ?? null
-                }))
+    return {
+        id: tariff.id,
+        start_date_time: tariff.start_date_time,
+        end_date_time: tariff.end_date_time,
+        currency: tariff.currency,
+        country_code: tariff.country_code,
+        price_components: tariff.price_components.map((component, index) => ({
+            id: `${tariff.id}-${index}`,
+            price: component.price,
+            type: component.type,
+            vat: component.vat ?? null,
+            step_size: component.step_size ?? null
+        }))
             };
         }
     };
