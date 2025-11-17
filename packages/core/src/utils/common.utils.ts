@@ -24,7 +24,6 @@ export interface TransformationsDependencies {
     };
     v2Adapter: {
         createCatalogFromIntent: (request: BecknV2DiscoverRequest) => Promise<BecknV2DiscoverResponse | null>;
-        createDiscoverCatalog: (request: BecknV2DiscoverRequest) => Promise<BecknV2DiscoverResponse | null>;
         createOnInitResponse: (request: BecknV2InitRequest) => Promise<BecknV2OnInitResponse>;
         createOnSelectResponse: (request: BecknV2SelectRequest) => Promise<BecknV2OnSelectResponse>;
     };
@@ -51,11 +50,9 @@ export const createTransformations = (deps: TransformationsDependencies) => {
             if (deps.becknVersion === '1.0') {
                 return Promise.reject(new Error('Discover flow is not available for Beckn v1.'));
             }
-            const adapter = getAdapters();
-            if ('createDiscoverCatalog' in adapter && adapter.createDiscoverCatalog) {
-                return adapter.createDiscoverCatalog(request);
-            }
-            return Promise.reject(new Error('Discover catalog not available'));
+            // For v2, createDiscoverCatalog is the same as createCatalogFromIntent
+            // (v2 uses discover/on_discover instead of search/on_search)
+            return getAdapters().createCatalogFromIntent(request as any) as Promise<BecknV2DiscoverResponse | null>;
         },
 
         createOnInitResponse: (request: InitReqBody | BecknV2InitRequest): Promise<OnInitReqBody | BecknV2OnInitResponse> => {

@@ -76,8 +76,8 @@ const validateConfig = (config: AppConfig) => {
     }
 
     if ((config as any).beckn?.version === undefined) {
-        console.warn('[appConfig] beckn.version missing in config. Falling back to 1.0');
-        (config as any).beckn.version = '1.0';
+        console.warn('[appConfig] beckn.version missing in config. Falling back to 2.0');
+        (config as any).beckn.version = '2.0';
     }
 
     if (!config.cache) {

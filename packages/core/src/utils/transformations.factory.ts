@@ -71,12 +71,10 @@ export const createTransformationsFactory = (factoryConfig: TransformationsFacto
         }
     };
 
-    // Create v2 adapter (TODO: refactor v2.utils similarly)
+    // Create v2 adapter
+    // Note: For v2, createCatalogFromIntent maps to discover/on_discover flow (search/on_search is deprecated)
     const v2Adapter = {
         createCatalogFromIntent: async (request: BecknV2DiscoverRequest): Promise<BecknV2DiscoverResponse | null> => {
-            return v2Utils.createDiscoverCatalog(request as any);
-        },
-        createDiscoverCatalog: async (request: BecknV2DiscoverRequest): Promise<BecknV2DiscoverResponse | null> => {
             return v2Utils.createDiscoverCatalog(request as any);
         },
         createOnInitResponse: async (request: BecknV2InitRequest): Promise<BecknV2OnInitResponse> => {
