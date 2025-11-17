@@ -1,0 +1,3 @@
+import { z } from "zod";
+
+export default z.object({ "streetAddress": z.string().describe("Street address (building name/number and street).").optional(), "extendedAddress": z.string().describe("Address extension (apt/suite/floor, C/O).").optional(), "addressLocality": z.string().describe("City/locality.").optional(), "addressRegion": z.string().describe("State/region/province.").optional(), "postalCode": z.string().describe("Postal/ZIP code.").optional(), "addressCountry": z.string().describe("Country name or ISO-3166-1 alpha-2 code.").optional() }).strict().describe("**Postal address** aligned with schema.org `PostalAddress`. Use for human-readable addresses. Geometry lives in `Location.geo` as GeoJSON.\n");
