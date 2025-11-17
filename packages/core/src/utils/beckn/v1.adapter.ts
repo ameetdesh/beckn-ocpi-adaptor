@@ -37,7 +37,7 @@ export const createV1Adapter = (config: V1AdapterConfig) => {
         },
         
         createOnSelectResponse: async (request: SelectRequest): Promise<OnSelectResponse> => {
-            return v1Utils.createOnSelectResponse(request);
+            return v1Utils.createOnSelectResponse(request) as OnSelectResponse;
         }
     };
 };

@@ -67,7 +67,7 @@ export const createTransformationsFactory = (factoryConfig: TransformationsFacto
             return v1Utils.createOnInitResponse(request as any);
         },
         createOnSelectResponse: async (request: SelectRequest): Promise<OnSelectResponse> => {
-            return v1Utils.createOnSelectResponse(request as any);
+            return v1Utils.createOnSelectResponse(request as any) as OnSelectResponse;
         }
     };
 

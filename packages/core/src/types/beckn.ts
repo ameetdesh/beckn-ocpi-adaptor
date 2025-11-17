@@ -42,7 +42,7 @@ export type Fulfillment = z.infer<typeof FulfillmentSchema>;
 export const QuoteSchema = quotationSchemaV1;
 export type Quote = z.infer<typeof QuoteSchema>;
 
-export const SearchRequestSchema = z.object({
+export const SearchRequestSchema: z.ZodTypeAny = z.object({
   context: ContextSchema,
   message: z.object({
     intent: intentSchemaV1.optional(),
@@ -50,7 +50,7 @@ export const SearchRequestSchema = z.object({
 }).strict();
 export type SearchRequest = z.infer<typeof SearchRequestSchema>;
 
-export const SelectRequestSchema = z.object({
+export const SelectRequestSchema: z.ZodTypeAny = z.object({
   context: ContextSchema,
   message: z.object({
     order: orderSchemaV1,
@@ -91,7 +91,7 @@ export const OnSearchResponseSchema = z.object({
 }).strict();
 export type OnSearchResponse = z.infer<typeof OnSearchResponseSchema>;
 
-export const OnSelectResponseSchema = z.object({
+export const OnSelectResponseSchema: z.ZodTypeAny = z.object({
   context: ContextSchema,
   message: z.object({
     order: orderSchemaV1,

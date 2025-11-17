@@ -22,7 +22,8 @@ export const createSearchHandler = (logService: LogServiceType) => {
             sendAck(req, res, context);
 
             // Process the search request
-            const response: OnSearchResponse | null = await createCatalogFromIntent(searchRequest);
+            // Note: This route only handles v1, so we can safely cast to OnSearchResponse
+            const response = await createCatalogFromIntent(searchRequest) as OnSearchResponse | null;
 
             if (!response) {
                 console.log(`[${new Date().toISOString()}] Failed to create catalog from intent`)
