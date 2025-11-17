@@ -146,52 +146,62 @@ export const createCatalogFromIntent = async (searchRequest: SearchReqBody) => {
 
     const uniqueProviders = transformLocations(filteredLocations);
 
-    const catalogProviders = [];
-    const catalogLocations = filteredLocations.map((location) => {
-        return {
-            id: location.id,
-            descriptor: {
-                name: location.name,
+    // Build location map for quick lookup
+    const locationMap = new Map(filteredLocations.map((location) => [
+        location.id,
+        {
+            geo: {
+                type: 'Point' as const,
+                coordinates: [location.gps_longitude, location.gps_latitude]
             },
             ...(appConfig.app.discovery.share_location_details ? {
-                gps: `${location.gps_latitude},${location.gps_longitude}`,
                 address: location.address_full
             } : {})
-        };
-    });
+        }
+    ]));
 
+    // Build catalog items with provider info embedded (new schema structure)
     const catalogItems = (await Promise.all(filteredItems.map(async (item) => {
         const tariffId = item.tariff_id ?? '';
         if (!tariffId) return null;
         const tariff = await getActiveTariffWithComponents(tariffId);
         let price = tariff ? calculatePriceFromTariff(tariff) : 0;
         if (price === 0) return null;
+        
         const current_item_beckn = await item_mapping.evaluate(item);
         if(current_item_beckn.descriptor.name === '') {
             current_item_beckn.descriptor.name = appConfig.app.defaults.item_name;
         }
         current_item_beckn.price.value = String(price.toFixed(2));
-        return current_item_beckn;
+        
+        // Find provider for this item's location
+        const itemLocation = filteredLocations.find(loc => loc.id === item.location_id);
+        const provider = uniqueProviders.find(p => p.location_id === item.location_id);
+        
+        // Build item in new schema format with provider embedded
+        const location = locationMap.get(item.location_id);
+        return {
+            ...current_item_beckn,
+            // Add provider info if available
+            ...(provider && itemLocation ? {
+                'beckn:provider': {
+                    'beckn:id': provider.id,
+                    'beckn:descriptor': {
+                        '@type': 'beckn:Descriptor',
+                        'schema:name': provider.name
+                    }
+                }
+            } : {}),
+            // Add location in availableAt format
+            ...(location ? {
+                'beckn:availableAt': [location]
+            } : {})
+        };
     }))).filter((item): item is NonNullable<typeof item> => item !== null);
 
-    for (const provider of uniqueProviders) {
-        const providerLocations = catalogLocations.filter((location) => location.id === provider.location_id);
-        const providerItems = catalogItems?.filter((item) => item?.location_ids.includes(provider.location_id));
+    if (catalogItems.length === 0) return null;
 
-        if (providerItems.length === 0) continue;
-
-        catalogProviders.push({
-            id: provider.id,
-            descriptor: {
-                name: provider.name,
-            },
-            locations: providerLocations,
-            items: providerItems,
-        });
-    }
-
-    if (catalogProviders.length === 0) return null;
-
+    // Build catalog in new schema format
     const response: OnSearchResponse = {
         context: {
             ...searchRequest.context,
@@ -202,8 +212,11 @@ export const createCatalogFromIntent = async (searchRequest: SearchReqBody) => {
         },
         message: {
             catalog: {
-                providers: catalogProviders || []
-            }
+                '@context': 'https://becknprotocol.io/schemas/core/v1/Catalog/schema-context.jsonld',
+                '@type': 'Catalog',
+                'beckn:id': 'catalog-1',
+                'beckn:items': catalogItems
+            } as any // Type assertion needed due to schema mismatch - will be properly typed once schema is fully aligned
         }
     };
 

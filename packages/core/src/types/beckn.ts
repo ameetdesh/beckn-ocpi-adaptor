@@ -1,16 +1,119 @@
 import { z } from 'zod';
 import type { paths } from './beckn_ev_schema';
 
-import ackSchemaV1 from './generated/beckn-v1/zod-Ack';
+// New spec generates different schema names - using new names with adapters where needed
+import ackResponseSchemaV1 from './generated/beckn-v1/zod-AckResponse';
 import catalogSchemaV1 from './generated/beckn-v1/zod-Catalog';
-import contextSchemaV1 from './generated/beckn-v1/zod-Context';
+import discoveryContextSchemaV1 from './generated/beckn-v1/zod-DiscoveryContext';
 import errorSchemaV1 from './generated/beckn-v1/zod-Error';
-import fulfillmentSchemaV1 from './generated/beckn-v1/zod-Fulfillment';
-import intentSchemaV1 from './generated/beckn-v1/zod-Intent';
 import itemSchemaV1 from './generated/beckn-v1/zod-Item';
 import locationSchemaV1 from './generated/beckn-v1/zod-Location';
-import orderSchemaV1 from './generated/beckn-v1/zod-Order';
-import quotationSchemaV1 from './generated/beckn-v1/zod-Quotation';
+
+// Adapters: Extract base schemas from new structures
+// AckResponse has { transaction_id, timestamp, ack_status, error? }
+// But we need { status } for compatibility
+const ackSchemaV1 = z.object({
+    status: z.enum(['ACK', 'NACK']),
+    tags: z.array(z.any()).optional(),
+}).strict();
+
+// DiscoveryContext is an intersection that includes base Context
+// Extract just the base context part for compatibility
+const contextSchemaV1 = discoveryContextSchemaV1;
+
+// Missing schemas - create minimal ones based on usage
+// These should ideally be generated from transaction.yaml once refs are fixed
+const fulfillmentSchemaV1 = z.object({
+    id: z.string().optional(),
+    type: z.string().optional(),
+    state: z.object({
+        descriptor: z.object({
+            code: z.string().optional(),
+            name: z.string().optional(),
+        }).optional(),
+    }).optional(),
+    tracking: z.boolean().optional(),
+    agent: z.any().optional(),
+    start: z.object({
+        location: z.any().optional(),
+        time: z.string().datetime({ offset: true }).optional(),
+        instructions: z.any().optional(),
+        contact: z.any().optional(),
+    }).optional(),
+    end: z.object({
+        location: z.any().optional(),
+        time: z.string().datetime({ offset: true }).optional(),
+        instructions: z.any().optional(),
+        contact: z.any().optional(),
+    }).optional(),
+    tags: z.array(z.any()).optional(),
+}).catchall(z.any());
+
+const intentSchemaV1 = z.object({
+    descriptor: z.object({
+        name: z.string().optional(),
+        code: z.string().optional(),
+        short_desc: z.string().optional(),
+        long_desc: z.string().optional(),
+    }).optional(),
+    provider: z.object({
+        id: z.string().optional(),
+    }).optional(),
+    fulfillment: fulfillmentSchemaV1.optional(),
+    payment: z.object({
+        uri: z.string().optional(),
+        tl_method: z.string().optional(),
+        params: z.record(z.any()).optional(),
+        type: z.string().optional(),
+        status: z.string().optional(),
+    }).optional(),
+    category: z.object({
+        id: z.string().optional(),
+    }).optional(),
+    offer: z.object({
+        id: z.string().optional(),
+    }).optional(),
+    item: z.object({
+        id: z.string().optional(),
+        quantity: z.object({
+            count: z.number().optional(),
+            measure: z.any().optional(),
+        }).optional(),
+    }).optional(),
+    tags: z.array(z.any()).optional(),
+}).catchall(z.any());
+
+const orderSchemaV1 = z.object({
+    id: z.string().optional(),
+    state: z.string().optional(),
+    items: z.array(z.any()).optional(),
+    billing: z.any().optional(),
+    fulfillment: z.array(fulfillmentSchemaV1).optional(),
+    quote: z.any().optional(),
+    payment: z.any().optional(),
+    documents: z.array(z.any()).optional(),
+    created_at: z.string().datetime({ offset: true }).optional(),
+    updated_at: z.string().datetime({ offset: true }).optional(),
+    tags: z.array(z.any()).optional(),
+}).catchall(z.any());
+
+const quotationSchemaV1 = z.object({
+    price: z.object({
+        currency: z.string().optional(),
+        value: z.string().optional(),
+        estimated_value: z.string().optional(),
+        computed_value: z.string().optional(),
+        listed_value: z.string().optional(),
+        offered_value: z.string().optional(),
+        minimum_value: z.string().optional(),
+        maximum_value: z.string().optional(),
+    }).optional(),
+    breakup: z.array(z.object({
+        title: z.string().optional(),
+        price: z.any().optional(),
+    })).optional(),
+    ttl: z.string().optional(),
+}).catchall(z.any());
 
 export type SearchReqBody =
   NonNullable<paths['/search']['post']['requestBody']>['content']['application/json'];
