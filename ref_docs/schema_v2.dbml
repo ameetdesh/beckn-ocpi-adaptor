@@ -1,0 +1,347 @@
+// Database schema for Beckn v2 OCPI Adaptor
+// Generated from ref_docs/model_v2.md and Beckn v2 specifications
+// Use this file with dbdiagram.io to visualize the Beckn v2 database schema
+
+// ============================================
+// Core OCPI Data (shared with v1)
+// ============================================
+
+Table locations {
+  id string [primary key]
+  name string
+  provider_id string
+  city string
+  state string
+  country_code string
+  gps_latitude double
+  gps_longitude double
+  address_full string
+  provider_name string
+  twentyfourseven boolean
+  
+  Note: 'OCPI Location data. Maps to Provider.locations[*] in Beckn v2'
+}
+
+Table items {
+  id integer [primary key, increment]
+  name string
+  evse_uid string
+  location_id string
+  connector_id string
+  standard string
+  power_type string
+  max_voltage integer
+  max_amperage integer
+  max_electric_power integer
+  status string
+  tariff_id string
+  
+  Note: 'OCPI Item/EVSE data. Maps to Catalog.items[*] with EvChargingService attributes in Beckn v2'
+}
+
+Table tariffs {
+  id string [primary key]
+  start_date_time string
+  end_date_time string
+  currency string
+  country_code string
+  
+  Note: 'OCPI Tariff data. Maps to Offer with EvChargingOffer attributes in Beckn v2'
+}
+
+Table price_components {
+  id integer [primary key, increment]
+  tariff_id string
+  price number
+  type string
+  vat number
+  step_size number
+  
+  Note: 'OCPI Price components. Maps to Offer.priceSpecification.components[] in Beckn v2'
+}
+
+// ============================================
+// Beckn v2 Specific Entities
+// ============================================
+
+Table beckn_v2_providers {
+  id string [primary key]
+  descriptor_name string
+  descriptor_short_desc string
+  descriptor_long_desc string
+  descriptor_images json
+  categories json
+  provider_id string
+  
+  // EvChargingPointOperator attributes
+  operator_name string
+  operator_code string
+  identifier string
+  same_as string
+  support_email string
+  support_phone string
+  gst_number string
+  cin string
+  msme string
+  operator_contact json
+  
+  Note: 'Beckn v2 Provider entity. Maps from OCPI operator data with additional Beckn-specific attributes'
+}
+
+Table beckn_v2_catalogs {
+  id string [primary key]
+  provider_id string
+  context string
+  type string
+  descriptor_name string
+  descriptor_short_desc string
+  descriptor_long_desc string
+  descriptor_images json
+  provider_id_ref string
+  validity_start_date string
+  validity_end_date string
+  
+  Note: 'Beckn v2 Catalog. Contains items and offers for a provider'
+}
+
+Table beckn_v2_items {
+  id string [primary key]
+  catalog_id string
+  ocpi_item_id integer
+  context string
+  type string
+  descriptor_name string
+  descriptor_short_desc string
+  descriptor_long_desc string
+  descriptor_images json
+  category_code_value string
+  category_name string
+  category_description string
+  
+  // EvChargingService attributes
+  connector_type string
+  connector_format string
+  connector_id string
+  power_type string
+  max_power_kw number
+  min_power_kw number
+  socket_count integer
+  reservation_supported boolean
+  station_status string
+  charging_speed string
+  amenity_features json
+  evse_id string
+  ocpp_id string
+  roaming_network string
+  service_location json
+  
+  available_at json
+  availability_window_start string
+  availability_window_end string
+  rateable boolean
+  rating_value number
+  rating_count integer
+  network_ids json
+  provider_id string
+  item_attributes json
+  
+  Note: 'Beckn v2 Item with EvChargingService attributes. Maps from OCPI connector/EVSE data'
+}
+
+Table beckn_v2_offers {
+  id string [primary key]
+  catalog_id string
+  tariff_id string
+  context string
+  type string
+  descriptor_name string
+  descriptor_short_desc string
+  descriptor_long_desc string
+  descriptor_images json
+  provider_id string
+  items json
+  
+  // EvChargingOffer attributes
+  tariff_model string
+  price_specification json
+  payment_accepted string
+  buyer_finder_fee_type string
+  buyer_finder_fee_value number
+  idle_fee_policy string
+  
+  validity_start_date string
+  validity_end_date string
+  price_currency string
+  price_value number
+  price_components json
+  eligibility_eligible_region string
+  eligibility_eligible_quantity_min integer
+  eligibility_eligible_quantity_max integer
+  offer_attributes json
+  add_ons json
+  add_on_items json
+  
+  Note: 'Beckn v2 Offer with EvChargingOffer attributes. Maps from OCPI tariff data'
+}
+
+Table beckn_v2_orders {
+  id string [primary key]
+  state string
+  items json
+  billing_total_payable number
+  billing_currency string
+  billing_breakup json
+  fulfillment_id string
+  quote json
+  payment json
+  documents json
+  created_at datetime
+  updated_at datetime
+  tags json
+  
+  Note: 'Beckn v2 Order. Maps from OCPI session data'
+}
+
+Table beckn_v2_fulfillments {
+  id string [primary key]
+  type string
+  state_code string
+  state_name string
+  tracking boolean
+  agent json
+  customer json
+  start_location json
+  start_time datetime
+  start_instructions string
+  start_contact json
+  end_location json
+  end_time datetime
+  end_instructions string
+  end_contact json
+  authorization_token string
+  authorization_type string
+  authorization_status string
+  authorization_valid_from datetime
+  authorization_valid_to datetime
+  tags json
+  
+  Note: 'Beckn v2 Fulfillment. Maps from OCPI session data. Represents charging session lifecycle'
+}
+
+Table beckn_v2_discover_requests {
+  id string [primary key]
+  context_domain string
+  context_action string
+  context_version string
+  context_bap_id string
+  context_bap_uri string
+  context_bpp_id string
+  context_bpp_uri string
+  context_transaction_id string
+  context_message_id string
+  context_timestamp datetime
+  context_key string
+  context_ttl string
+  context_location json
+  context_schema_context json
+  message_intent json
+  created_at datetime
+  
+  Note: 'Beckn v2 Discover request logs'
+}
+
+Table beckn_v2_discover_responses {
+  id string [primary key]
+  request_id string
+  context json
+  message_catalogs json
+  error_code string
+  error_message string
+  error_details json
+  created_at datetime
+  
+  Note: 'Beckn v2 Discover response (on_discover) logs'
+}
+
+Table beckn_v2_select_requests {
+  id string [primary key]
+  context json
+  message_order json
+  created_at datetime
+  
+  Note: 'Beckn v2 Select request logs'
+}
+
+Table beckn_v2_select_responses {
+  id string [primary key]
+  request_id string
+  context json
+  message_order json
+  error json
+  created_at datetime
+  
+  Note: 'Beckn v2 Select response (on_select) logs'
+}
+
+Table beckn_v2_init_requests {
+  id string [primary key]
+  context json
+  message_order json
+  created_at datetime
+  
+  Note: 'Beckn v2 Init request logs'
+}
+
+Table beckn_v2_init_responses {
+  id string [primary key]
+  request_id string
+  context json
+  message_order json
+  error json
+  created_at datetime
+  
+  Note: 'Beckn v2 Init response (on_init) logs'
+}
+
+Table app_logs {
+  id string [primary key]
+  transaction_id string
+  message_id string
+  bap_id string
+  protocol string
+  action string
+  stage string
+  endpoint string
+  method string
+  status string
+  duration number
+  status_code integer
+  request_data json
+  response_data json
+  error_message string
+  created_at datetime
+  
+  Note: 'Application logs stored in ClickHouse. Used for both v1 and v2'
+}
+
+// ============================================
+// Relationships
+// ============================================
+
+// OCPI base relationships
+Ref: items.location_id > locations.id
+Ref: items.tariff_id > tariffs.id
+Ref: price_components.tariff_id > tariffs.id
+
+// Beckn v2 relationships
+// Note: beckn_v2_providers.provider_id matches locations.provider_id (logical grouping, not FK)
+Ref: beckn_v2_catalogs.provider_id > beckn_v2_providers.id
+Ref: beckn_v2_items.catalog_id > beckn_v2_catalogs.id
+Ref: beckn_v2_items.ocpi_item_id > items.id
+Ref: beckn_v2_offers.catalog_id > beckn_v2_catalogs.id
+Ref: beckn_v2_offers.tariff_id > tariffs.id
+Ref: beckn_v2_orders.fulfillment_id > beckn_v2_fulfillments.id
+Ref: beckn_v2_discover_responses.request_id > beckn_v2_discover_requests.id
+Ref: beckn_v2_select_responses.request_id > beckn_v2_select_requests.id
+Ref: beckn_v2_init_responses.request_id > beckn_v2_init_requests.id
+

@@ -1,0 +1,84 @@
+// Database schema for Beckn OCPI Adaptor
+// Generated from ref_docs/model_v1.md
+// Use this file with dbdiagram.io to visualize the database schema
+
+Table locations {
+  id string [primary key]
+  name string
+  provider_id string
+  city string
+  state string
+  country_code string
+  gps_latitude double
+  gps_longitude double
+  address_full string
+  provider_name string
+  twentyfourseven boolean
+  
+  Note: 'Location data from OCPI /locations endpoint'
+}
+
+Table items {
+  id integer [primary key, increment]
+  name string
+  evse_uid string
+  location_id string
+  connector_id string
+  standard string
+  power_type string
+  max_voltage integer
+  max_amperage integer
+  max_electric_power integer
+  status string
+  tariff_id string
+  
+  Note: 'Item/EVSE data from OCPI /locations endpoint. Maps to Beckn Item.'
+}
+
+Table tariffs {
+  id string [primary key]
+  start_date_time string
+  end_date_time string
+  currency string
+  country_code string
+  
+  Note: 'Tariff data from OCPI /tariffs endpoint'
+}
+
+Table price_components {
+  id integer [primary key, increment]
+  tariff_id string
+  price number
+  type string
+  vat number
+  step_size number
+  
+  Note: 'Price component data from OCPI /tariffs endpoint'
+}
+
+Table app_logs {
+  id string [primary key]
+  transaction_id string
+  message_id string
+  bap_id string
+  protocol string
+  action string
+  stage string
+  endpoint string
+  method string
+  status string
+  duration number
+  status_code integer
+  request_data json
+  response_data json
+  error_message string
+  created_at datetime
+  
+  Note: 'Application logs stored in ClickHouse'
+}
+
+// Relationships
+Ref: items.location_id > locations.id
+Ref: items.tariff_id > tariffs.id
+Ref: price_components.tariff_id > tariffs.id
+

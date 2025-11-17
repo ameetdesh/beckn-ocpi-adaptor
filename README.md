@@ -4,6 +4,17 @@
 
 A TypeScript-based adaptor that bridges the Beckn Protocol with the Open Charge Point Interface (OCPI) standard, enabling seamless integration between Beckn network participants and OCPI-compliant charging station operators.
 
+## Architecture
+
+This repository is organized as a modular monorepo with separate npm packages:
+
+- **`@beckn/ocpi-adaptor-core`** - Core SDK with interfaces, types, and transformation utilities
+- **`@beckn/cache-redis`** - Redis cache store implementation
+- **`@beckn/log-clickhouse`** - ClickHouse log store implementation
+- **`@beckn/server`** - Express server factory
+
+Each package can be used independently or together. See [packages/README.md](./packages/README.md) for details on testing individual packages.
+
 ## Features
 
 - OCPI 2.2.1 compliant interface
@@ -46,6 +57,8 @@ A TypeScript-based adaptor that bridges the Beckn Protocol with the Open Charge 
    # or
    yarn install
    ```
+   
+   This will install dependencies for the root project and all packages in the `packages/` directory.
 
 3. Set up environment variables(optional):
    ```bash
@@ -236,12 +249,6 @@ You can provide environment variables in the config yaml file using the followin
 ${ENV_VARIABLE_NAME}
 ```
 
-## Data Models and Beckn Mappings
-
-The data models andbeckn mappings are detailed in the [model.md](./ref_docs/model.md) file.
-
-![ocpi_db](./ref_docs/ocpi_db.png)
-
 ## Usage
 
 Start the development server:
@@ -264,11 +271,53 @@ npm run build
 npm start
 ```
 
-Run discovery service:
+### Testing Individual Packages
+
+You can test each package independently:
+
 ```bash
-npm run discovery
+# Test all packages
+npm run test:packages
+
+# Test individual packages
+npm run test:core              # Test core package (no external dependencies)
+npm run test:cache-redis       # Test Redis cache (requires Redis)
+npm run test:log-clickhouse    # Test ClickHouse log (requires ClickHouse)
+npm run test:server            # Test Express server
 ```
-This can be scheduled to run at regular intervals using a task scheduler like cron.
+
+See [packages/README.md](./packages/README.md) for detailed testing instructions.
+
+## Package Development
+
+### Generating Zod Types
+
+The repository uses OpenAPI specifications to generate Zod schemas for type validation:
+
+```bash
+# Generate all Zod types
+npm run generate:zod
+
+# Generate specific versions
+npm run generate:zod:v1        # Generate Beckn v1 types
+npm run generate:zod:v2        # Generate Beckn v2 types
+npm run generate:zod:attributes # Generate attribute schemas
+```
+
+### Publishing Packages
+
+Packages can be published individually or all at once:
+
+```bash
+# Publish all packages
+npm run publish:all
+
+# Publish individual packages
+npm run publish:core
+npm run publish:cache-redis
+npm run publish:log-clickhouse
+npm run publish:server
+```
 
 ## Contributing
 

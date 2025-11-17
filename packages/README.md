@@ -12,7 +12,7 @@ npm install
 
 ## Testing @beckn/ocpi-adaptor-core
 
-Tests the core SDK with in-memory implementations:
+Tests the core SDK with in-memory implementations (no external dependencies required):
 
 ```bash
 cd packages/core
@@ -20,9 +20,9 @@ npm run test:example
 ```
 
 This tests:
-- Cache store interface
-- Log service interface
-- Factory functions
+- Cache store interface (`createOCPICache`)
+- Log service interface (`createLogService`)
+- OCPI data snapshot operations
 
 ## Testing @beckn/cache-redis
 
