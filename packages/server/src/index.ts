@@ -72,7 +72,10 @@ export const startServer = async (
 
     // Start the server
     app.listen(config.port, () => {
-        console.log(`[${new Date().toISOString()}] Server is running on http://localhost:${config.port}`);
+        console.log(`[${new Date().toISOString()}] Server is running on http://localhost/:${config.port}`);
+    }).on('error', (error: Error) => {
+        console.error(`[${new Date().toISOString()}] Failed to start server:`, error);
+        process.exit(1);
     });
 
     // Setup process handlers

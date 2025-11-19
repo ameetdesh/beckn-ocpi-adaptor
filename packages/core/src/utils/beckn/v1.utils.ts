@@ -1,5 +1,6 @@
 import type { OnSearchResponse, SelectRequest, Context, Item, OnSelectResponse, SearchReqBody, InitReqBody, OnInitReqBody, Quote, Fulfillment } from '../../types/beckn';
-import { locationWithRadiusSchema } from '../../types/beckn';
+import { locationWithRadiusSchema, OnSearchResponseSchema, OnSelectResponseSchema } from '../../types/beckn';
+import { z } from 'zod';
 import { error_messages } from '../error_codes';
 import { item_mapping } from '../../models/mappings/item.jsonata';
 import { fulfillment_mapping } from '../../models/mappings/fulfillment.jsonata';
@@ -105,6 +106,21 @@ const convertToMeters = (radius: number, unit: string) => {
 
 const resolveItemIdentifier = (rawId: string): string => rawId;
 
+const ensureResponse = (schema: z.ZodTypeAny, payload: unknown) => {
+    try {
+        return schema.parse(payload);
+    } catch (error) {
+        if (error instanceof z.ZodError) {
+            console.error(`[${new Date().toISOString()}] Beckn v1 payload validation failed:`);
+            console.error('Validation errors:', JSON.stringify(error.errors, null, 2));
+            console.error('Payload that failed:', JSON.stringify(payload, null, 2));
+        } else {
+            console.error(`[${new Date().toISOString()}] Beckn v1 payload validation failed`, error);
+        }
+        throw error;
+    }
+};
+
 export const createCatalogFromIntent = async (searchRequest: SearchReqBody) => {
     const snapshot = await getOcpiSnapshot();
     const locations = snapshot.locations;
@@ -169,39 +185,69 @@ export const createCatalogFromIntent = async (searchRequest: SearchReqBody) => {
         if (price === 0) return null;
         
         const current_item_beckn = await item_mapping.evaluate(item);
-        if(current_item_beckn.descriptor.name === '') {
-            current_item_beckn.descriptor.name = appConfig.app.defaults.item_name;
+        let itemName = current_item_beckn.descriptor.name;
+        if (!itemName || itemName === '') {
+            itemName = appConfig.app.defaults.item_name;
         }
-        current_item_beckn.price.value = String(price.toFixed(2));
         
         // Find provider for this item's location
         const itemLocation = filteredLocations.find(loc => loc.id === item.location_id);
         const provider = uniqueProviders.find(p => p.location_id === item.location_id);
         
-        // Build item in new schema format with provider embedded
+        // Build item in new schema format matching zod-Catalog.ts structure
         const location = locationMap.get(item.location_id);
-        return {
-            ...current_item_beckn,
-            // Add provider info if available
-            ...(provider && itemLocation ? {
-                'beckn:provider': {
-                    'beckn:id': provider.id,
-                    'beckn:descriptor': {
-                        '@type': 'beckn:Descriptor',
-                        'schema:name': provider.name
-                    }
+        
+        // Transform to new schema format: @context, @type, beckn:id, beckn:descriptor
+        // Note: beckn:provider and beckn:itemAttributes are REQUIRED by the schema
+        const transformedItem: Record<string, unknown> = {
+            '@context': 'https://becknprotocol.io/schemas/core/v1/Item/schema-context.jsonld',
+            '@type': 'beckn:Item',
+            'beckn:id': current_item_beckn.id,
+            'beckn:descriptor': {
+                '@type': 'beckn:Descriptor',
+                'schema:name': itemName
+            },
+            // beckn:provider is REQUIRED by schema
+            'beckn:provider': provider && itemLocation ? {
+                'beckn:id': provider.id,
+                'beckn:descriptor': {
+                    '@type': 'beckn:Descriptor',
+                    'schema:name': provider.name
                 }
-            } : {}),
-            // Add location in availableAt format
-            ...(location ? {
-                'beckn:availableAt': [location]
-            } : {})
+            } : {
+                'beckn:id': 'unknown',
+                'beckn:descriptor': {
+                    '@type': 'beckn:Descriptor',
+                    'schema:name': 'Unknown Provider'
+                }
+            },
+            // beckn:itemAttributes is REQUIRED by schema (must have @context and @type)
+            'beckn:itemAttributes': {
+                '@context': 'https://becknprotocol.io/schemas/EvChargingService/v1/attributes.jsonld',
+                '@type': 'EvChargingService'
+            }
         };
+        
+        // Add category if descriptor.code exists
+        if (current_item_beckn.descriptor?.code) {
+            transformedItem['beckn:category'] = {
+                '@type': 'schema:CategoryCode',
+                'schema:codeValue': current_item_beckn.descriptor.code,
+                'schema:name': itemName
+            };
+        }
+        
+        // Add location in availableAt format
+        if (location) {
+            transformedItem['beckn:availableAt'] = [location];
+        }
+        
+        return transformedItem;
     }))).filter((item): item is NonNullable<typeof item> => item !== null);
 
     if (catalogItems.length === 0) return null;
 
-    // Build catalog in new schema format
+    // Build catalog in new schema format matching zod-Catalog.ts structure
     const response: OnSearchResponse = {
         context: {
             ...searchRequest.context,
@@ -215,12 +261,16 @@ export const createCatalogFromIntent = async (searchRequest: SearchReqBody) => {
                 '@context': 'https://becknprotocol.io/schemas/core/v1/Catalog/schema-context.jsonld',
                 '@type': 'Catalog',
                 'beckn:id': 'catalog-1',
-                'beckn:items': catalogItems
-            } as any // Type assertion needed due to schema mismatch - will be properly typed once schema is fully aligned
+                'beckn:descriptor': {
+                    '@type': 'beckn:Descriptor',
+                    'schema:name': 'EV Charging Catalog'
+                },
+                'beckn:items': catalogItems as any // Type assertion needed - items are validated by ensureResponse
+            }
         }
     };
 
-    return response;
+    return ensureResponse(OnSearchResponseSchema, response) as OnSearchResponse;
 }
 
 const createBecknItem = async (item: CachedItem, tariff: ActiveTariff) => {
@@ -384,7 +434,8 @@ export const createOnInitResponse = async (initRequest: InitReqBody) => {
             }
         }
     };
-    return onInitResponse;
+    // OnInitResponse has the same structure as OnSelectResponse (context, message.order, optional error)
+    return ensureResponse(OnSelectResponseSchema, onInitResponse) as OnInitReqBody;
 }
 
 export const createOnSelectResponse = async (selectRequest: SelectRequest) => {
@@ -476,7 +527,7 @@ export const createOnSelectResponse = async (selectRequest: SelectRequest) => {
             }
         }
     };
-    return response;
+    return ensureResponse(OnSelectResponseSchema, response) as OnSelectResponse;
 }
 
 const createErrorResponse = (context: Context, error_code: string, error_message?: string) => {
