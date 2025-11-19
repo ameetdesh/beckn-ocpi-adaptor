@@ -173,9 +173,10 @@ const fetchLogRows = async (config: ClickHouseLogConfig, params: LogQueryParams)
  * This can be used with @beckn/ocpi-adaptor-core's createLogService function.
  */
 export const createClickHouseLogStore = (config: ClickHouseLogConfig): LogStore => {
+    const DEFAULT_INIT_RETRIES = 4;
     return {
         async init(): Promise<boolean> {
-            const maxAttempts = config.initRetries ?? Number(process.env.CLICKHOUSE_INIT_RETRIES ?? 10);
+            const maxAttempts = config.initRetries ?? Number(process.env.CLICKHOUSE_INIT_RETRIES ?? DEFAULT_INIT_RETRIES);
             const baseDelayMs = config.initRetryDelayMs ?? Number(process.env.CLICKHOUSE_INIT_RETRY_DELAY_MS ?? 2000);
 
             for (let attempt = 1; attempt <= maxAttempts; attempt++) {
